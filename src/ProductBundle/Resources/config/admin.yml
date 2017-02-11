@@ -1,0 +1,11 @@
+services:
+    product.admin.vendor:
+        class: ProductBundle\Admin\VendorAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Content", label: "Vendor" }
+        arguments:
+            - ~
+            - ProductBundle\Entity\Vendor
+            - ~
+        calls:
+            - [ setTranslationDomain, [ProductBundle]]
