@@ -112,4 +112,44 @@ class ProductType
     {
         return $this->code;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getAttributes()
+    {
+        return $this->attributes;
+    }
+
+    /**
+     * @param mixed $attributes
+     */
+    public function setAttributes($attributes)
+    {
+        $this->attributes = $attributes;
+    }
+
+    /**
+     * @param Attribute $attribute
+     *
+     * @return ProductType
+     */
+    public function addAttribute($attribute)
+    {
+        $this->attributes[]= $attribute;
+
+        return $this;
+    }
+
+    /**
+     * @param Attribute $attribute
+     *
+     * @return ProductType
+     */
+    public function removeAttribute($attribute)
+    {
+        $this->attributes->removeElement($attribute);
+
+        return $this;
+    }
 }

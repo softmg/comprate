@@ -37,13 +37,6 @@ class Attribute
     private $code;
 
     /**
-     * @var string
-     *
-     * @ORM\Column(name="value", type="string", length=255)
-     */
-    private $value;
-
-    /**
      * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="attribute")
      */
     private $productAttributes;
@@ -56,12 +49,18 @@ class Attribute
     private $productTypes;
 
     /**
+     * @ORM\OneToMany(targetEntity="AttributeValue", mappedBy="attribute")
+     */
+    private $values;
+
+    /**
      * Attribute constructor.
      */
     public function __construct()
     {
         $this->productAttributes = new ArrayCollection();
         $this->productTypes = new ArrayCollection();
+        $this->values = new ArrayCollection();
     }
 
     /**
@@ -123,26 +122,95 @@ class Attribute
     }
 
     /**
+     * @return \ProductBundle\Entity\ProductType[]
+     */
+    public function getProductTypes()
+    {
+        return $this->productTypes;
+    }
+
+    /**
+     * @param \ProductBundle\Entity\ProductType[] $productTypes
+     */
+    public function setProductTypes($productTypes)
+    {
+        $this->productTypes = $productTypes;
+    }
+
+    /**
      * Set value
      *
-     * @param string $value
+     * @param ProductType $productType
      *
      * @return Attribute
      */
-    public function setValue($value)
+    public function addProductType($productType)
     {
-        $this->value = $value;
+        $this->productTypes[]= $productType;
 
         return $this;
     }
 
     /**
-     * Get value
+     * Set value
      *
-     * @return string
+     * @param ProductType $productType
+     *
+     * @return Attribute
      */
-    public function getValue()
+    public function removeProductType($productType)
     {
-        return $this->value;
+        $this->productTypes->removeElement($productType);
+
+        return $this;
+    }
+
+    /**
+     * @return \ProductBundle\Entity\AttributeValue[]
+     */
+    public function getValues()
+    {
+        return $this->values;
+    }
+
+    /**
+     * @param \ProductBundle\Entity\AttributeValue[] $values
+     *
+     * @return Attribute
+     */
+    public function setValues($values)
+    {
+        $this->values = $values;
+
+        return $this;
+    }
+
+    /**
+     * @param AttributeValue $value
+     *
+     * @return Attribute
+     */
+    public function addValue($value)
+    {
+        $this->values[]= $value;
+
+        return $this;
+    }
+
+    /**
+     * @param AttributeValue $value
+     *
+     * @return Attribute
+     */
+    public function removeValue($value)
+    {
+        $this->values->removeElement($value);
+
+        return $this;
+    }
+
+    public function __toString()
+    {
+        return $this->getName();
     }
 }

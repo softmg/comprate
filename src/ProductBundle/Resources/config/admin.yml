@@ -9,3 +9,36 @@ services:
             - ~
         calls:
             - [ setTranslationDomain, [ProductBundle]]
+
+    product.admin.productType:
+        class: ProductBundle\Admin\ProductTypeAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Content", label: "ProductType" }
+        arguments:
+            - ~
+            - ProductBundle\Entity\ProductType
+            - ~
+        calls:
+            - [ setTranslationDomain, [ProductBundle]]
+
+    product.admin.attribute:
+        class: ProductBundle\Admin\AttributeAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Content", label: "Attribute" }
+        arguments:
+            - ~
+            - ProductBundle\Entity\Attribute
+            - ~
+        calls:
+            - [ setTranslationDomain, [ProductBundle]]
+
+    product.admin.attributeValue:
+        class: ProductBundle\Admin\AttributeValueAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Content", label: "AttributeValue" }
+        arguments:
+            - ~
+            - ProductBundle\Entity\AttributeValue
+            - ~
+        calls:
+            - [ setTranslationDomain, [ProductBundle]]
