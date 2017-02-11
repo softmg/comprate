@@ -1,0 +1,4 @@
+product:
+    resource: "@ProductBundle/Controller/"
+    type:     annotation
+    prefix:   product/
