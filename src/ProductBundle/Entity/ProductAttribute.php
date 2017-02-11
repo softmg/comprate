@@ -73,7 +73,6 @@ class ProductAttribute
      */
     private $isRequiredChoice = false;
 
-
     /**
      * Get id
      *

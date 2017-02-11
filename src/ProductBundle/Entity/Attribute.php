@@ -49,13 +49,20 @@ class Attribute
     private $productAttributes;
 
     /**
+     * @var ProductType[]
+     * @ORM\ManyToMany(targetEntity="ProductType", inversedBy="attributes")
+     * @ORM\JoinTable(name="attribute_types")
+     */
+    private $productTypes;
+
+    /**
      * Attribute constructor.
      */
     public function __construct()
     {
         $this->productAttributes = new ArrayCollection();
+        $this->productTypes = new ArrayCollection();
     }
-
 
     /**
      * Get id

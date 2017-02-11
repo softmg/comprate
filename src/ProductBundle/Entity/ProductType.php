@@ -42,13 +42,18 @@ class ProductType
     private $products;
 
     /**
+     * @ORM\ManyToMany(targetEntity="Attribute", mappedBy="productTypes")
+     */
+    private $attributes;
+
+    /**
      * ProductType constructor.
      */
     public function __construct()
     {
         $this->products = new ArrayCollection();
+        $this->attributes = new ArrayCollection();
     }
-
 
     /**
      * Get id
