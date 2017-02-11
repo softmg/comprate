@@ -1,4 +1,4 @@
-Feature: Get available components
+Feature: Cpus
 
   Background:
     Given the following cpus exist:
