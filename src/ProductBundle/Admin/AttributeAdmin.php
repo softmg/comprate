@@ -28,6 +28,14 @@ class AttributeAdmin extends AbstractAdmin
                 'multiple' => true,
                 'expanded' => true
             ])
+            ->add('minValue', 'number', array(
+                'label' => 'Минимальное значение',
+                'required'  => false
+            ))
+            ->add('maxValue', 'number', array(
+                'label' => 'Минимальное значение',
+                'required'  => false
+            ))
         ;
     }
 

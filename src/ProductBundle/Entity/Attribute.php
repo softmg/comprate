@@ -36,6 +36,21 @@ class Attribute
      */
     private $code;
 
+
+    /**
+     * @var integer
+     *
+     * @ORM\Column(name="min_value", type="integer", nullable=true)
+     */
+    private $minValue;
+
+    /**
+     * @var integer
+     *
+     * @ORM\Column(name="max_value", type="integer", nullable=true)
+     */
+    private $maxValue;
+
     /**
      * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="attribute")
      */
@@ -207,6 +222,38 @@ class Attribute
         $this->values->removeElement($value);
 
         return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMinValue()
+    {
+        return $this->minValue;
+    }
+
+    /**
+     * @param int $minValue
+     */
+    public function setMinValue($minValue)
+    {
+        $this->minValue = $minValue;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMaxValue()
+    {
+        return $this->maxValue;
+    }
+
+    /**
+     * @param mixed $maxValue
+     */
+    public function setMaxValue($maxValue)
+    {
+        $this->maxValue = $maxValue;
     }
 
     public function __toString()
