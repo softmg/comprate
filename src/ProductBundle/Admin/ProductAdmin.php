@@ -6,8 +6,9 @@ use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Show\ShowMapper;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 
-class AttributeAdmin extends AbstractAdmin
+class ProductAdmin extends AbstractAdmin
 {
     // Fields to be shown on create/edit forms
     protected function configureFormFields(FormMapper $formMapper)
@@ -16,9 +17,22 @@ class AttributeAdmin extends AbstractAdmin
             ->add('name', 'text', array(
                 'label' => 'Название'
             ))
-            ->add('vendor', 'text', array(
-                'label' => 'Код'
-            ))
+            ->add('vendor', EntityType::class, [
+                'label' => 'Производитель',
+                'class' => 'ProductBundle:Vendor',
+                'choice_label' => 'name',
+                'required' => true,
+                'multiple' => false,
+                'expanded' => true
+            ])
+            ->add('productAttributes', EntityType::class, [
+                'label' => 'Характеристики',
+                'class' => 'ProductBundle:ProductAttribute',
+                'choice_label' => 'name',
+                'required' => true,
+                'multiple' => true,
+                'expanded' => true
+            ])
         ;
     }
 
@@ -27,6 +41,7 @@ class AttributeAdmin extends AbstractAdmin
     {
         $datagridMapper
             ->add('name')
+            ->add('vendor')
         ;
     }
 
@@ -35,7 +50,7 @@ class AttributeAdmin extends AbstractAdmin
     {
         $listMapper
             ->addIdentifier('name')
-            ->add('code')
+            ->add('vendor')
         ;
     }
 
@@ -44,6 +59,8 @@ class AttributeAdmin extends AbstractAdmin
     {
         $showMapper
             ->add('name')
+            ->add('vendor')
+            ->add('attributes')
         ;
     }
 }

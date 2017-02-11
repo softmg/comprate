@@ -232,4 +232,20 @@ class Product
     {
         return $this->price;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getProductAttributes()
+    {
+        return $this->productAttributes;
+    }
+
+    /**
+     * @param mixed $productAttributes
+     */
+    public function setProductAttributes($productAttributes)
+    {
+        $this->productAttributes = $productAttributes;
+    }
 }
