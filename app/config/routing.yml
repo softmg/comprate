@@ -1,7 +1,12 @@
+parsing:
+    resource: "@ParsingBundle/Controller/"
+    type:     annotation
+    prefix:   /parsing
+
 product:
     resource: "@ProductBundle/Controller/"
     type:     annotation
-    prefix:   product/
+    prefix:   /product
 
 admin:
     resource: '@SonataAdminBundle/Resources/config/routing/sonata_admin.xml'
