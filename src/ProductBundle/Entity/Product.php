@@ -40,7 +40,7 @@ class Product
     /**
      * @var ProductType
      *
-     * @ORM\ManyToOne(targetEntity="Type", inversedBy="products")
+     * @ORM\ManyToOne(targetEntity="ProductType", inversedBy="products")
      * @ORM\JoinColumn(name="type_id", referencedColumnName="id")
      */
     private $type;

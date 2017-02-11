@@ -6,12 +6,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Atrribute
+ * Attribute
  *
  * @ORM\Table(name="atrribute")
- * @ORM\Entity(repositoryClass="ProductBundle\Repository\AtrributeRepository")
+ * @ORM\Entity(repositoryClass="ProductBundle\Repository\AttributeRepository")
  */
-class Atrribute
+class Attribute
 {
     /**
      * @var int
@@ -49,7 +49,7 @@ class Atrribute
     private $productAttributes;
 
     /**
-     * Atrribute constructor.
+     * Attribute constructor.
      */
     public function __construct()
     {
@@ -72,7 +72,7 @@ class Atrribute
      *
      * @param string $name
      *
-     * @return Atrribute
+     * @return Attribute
      */
     public function setName($name)
     {
@@ -96,7 +96,7 @@ class Atrribute
      *
      * @param string $code
      *
-     * @return Atrribute
+     * @return Attribute
      */
     public function setCode($code)
     {
@@ -120,7 +120,7 @@ class Atrribute
      *
      * @param string $value
      *
-     * @return Atrribute
+     * @return Attribute
      */
     public function setValue($value)
     {

@@ -2,7 +2,7 @@
 
 namespace ProductBundle\Entity;
 
-use Doctrine\Common\Annotations\Annotation\Attribute;
+use ProductBundle\Entity\Attribute;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
