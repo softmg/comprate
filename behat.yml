@@ -4,11 +4,11 @@ default:
             contexts:
                 - FeatureContext:
                     doctrine: "@doctrine"
+                - RestApiContext:
+                    client: "@csa_guzzle.client.local_test_api"
+                    dummyDataPath: "%paths.base%/features/Dummy/"
     extensions:
-        Behat\Symfony2Extension: ~
-
-        Behat\MinkExtension:
-            base_url: "http://comprate.loc/app_dev.php/"
-            sessions:
-                default:
-                    symfony2: ~
+        Behat\Symfony2Extension:
+            kernel:
+                env: "acceptance"
+                debug: "true"

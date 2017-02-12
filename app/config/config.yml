@@ -139,3 +139,10 @@ jms_serializer:
             FOSUB:
                 namespace_prefix: FOS\UserBundle
                 path: %kernel.root_dir%/serializer/FOSUB
+
+csa_guzzle:
+    logger: true
+    clients:
+        local_test_api:
+            config:
+                base_url: http://symfony-rest-example.dev/app_dev.php/
