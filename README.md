@@ -28,6 +28,12 @@ php bin/console doctrine:database:create
 mysql -u<db_user> -p<db_pass> <db_name> < ./data/comprate.sql
 ```
 
+###Установить права для директорий
+```bash
+chmod 0755 cc.sh
+./cc.sh
+```
+
 ###Установить зависимости
 ```bash
 wget http://getcomposer.org/composer.phar .
