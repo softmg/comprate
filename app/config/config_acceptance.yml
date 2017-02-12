@@ -19,10 +19,3 @@ csa_guzzle:
         local_test_api:
             config:
                 base_url: http://comprate.loc/app_acceptance.php/
-
-# Oneup Flysystem
-oneup_flysystem:
-    adapters:
-        local_adapter:
-            local:
-                directory: %kernel.root_dir%/../features/uploadTemp

@@ -40,9 +40,9 @@ class FeatureContext implements Context, SnippetAcceptingContext
     public function createSchema()
     {
         echo '-- DROP SCHEMA -- ' . "\n\n\n";
-        $this->schemaTool->dropSchema($this->classes);
+        //$this->schemaTool->dropSchema($this->classes);
 
         echo '-- CREATE SCHEMA -- ' . "\n\n\n";
-        $this->schemaTool->createSchema($this->classes);
+        //$this->schemaTool->createSchema($this->classes);
     }
 }

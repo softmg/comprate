@@ -8,7 +8,7 @@ Feature: Cpus
 
 
   Scenario: Get available cpu
-    When I send GET request to "/computers/cpus" with following json:
+    When I send a GET request to "/computers/cpus" with following JSON:
     """
     {
       "page": 1,

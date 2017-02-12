@@ -1,7 +1,5 @@
 <?php
-// /src/AppBundle/Features/Context/RestApiContext.php
-
-namespace AppBundle\Features\Context;
+namespace ApiBundle\Features\Context;
 
 use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\PyStringNode;
@@ -161,6 +159,35 @@ class RestApiContext implements Context
      * @When /^(?:I )?send a ([A-Z]+) request to "([^"]+)" with values:$/
      */
     public function iSendARequestWithValues($method, $url, TableNode $post)
+    {
+        $url = $this->prepareUrl($url);
+        $fields = array();
+
+        foreach ($post->getRowsHash() as $key => $val) {
+            $fields[$key] = $this->replacePlaceHolder($val);
+        }
+
+        $bodyOption = array(
+            'body' => json_encode($fields),
+        );
+        $this->request = $this->getClient()->createRequest($method, $url, $bodyOption);
+        if (!empty($this->headers)) {
+            $this->request->addHeaders($this->headers);
+        }
+
+        $this->sendRequest();
+    }
+
+    /**
+     * Sends HTTP request to specific URL with field values from Table.
+     *
+     * @param string    $method request method
+     * @param string    $url    relative url
+     * @param TableNode $post   table of post values
+     *
+     * @When /^(?:I )?send a ([A-Z]+) request to "([^"]+)" with following JSON:$/
+     */
+    public function iSendARequestWithJSON($method, $url, TableNode $post)
     {
         $url = $this->prepareUrl($url);
         $fields = array();

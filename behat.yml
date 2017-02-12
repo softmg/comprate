@@ -1,12 +1,14 @@
 default:
     suites:
         default:
+            type: symfony_bundle
+            bundle: ApiBundle
             contexts:
                 - FeatureContext:
                     doctrine: "@doctrine"
-                - RestApiContext:
+                - ApiBundle\Features\Context\RestApiContext:
                     client: "@csa_guzzle.client.local_test_api"
-                    dummyDataPath: "%paths.base%/features/Dummy/"
+                    dummyDataPath: "%paths.base%/features/dummy/"
     extensions:
         Behat\Symfony2Extension:
             kernel:
