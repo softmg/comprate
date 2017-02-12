@@ -1,3 +1,18 @@
+analyze:
+    resource: "@AnalyzeBundle/Controller/"
+    type:     annotation
+    prefix:   /analyze
+
+computer:
+    resource: "@ComputerBundle/Controller/"
+    type:     annotation
+    prefix:   /computer
+
+api:
+    resource: "@ApiBundle/Controller/"
+    type:     annotation
+    prefix:   /api
+
 parsing:
     resource: "@ParsingBundle/Controller/"
     type:     annotation
