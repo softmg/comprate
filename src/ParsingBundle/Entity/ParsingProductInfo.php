@@ -25,7 +25,7 @@ class ParsingProductInfo
     /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="Product")
+     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      */
     private $product;
