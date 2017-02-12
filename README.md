@@ -26,6 +26,7 @@ git checkout master
 ```bash
 php bin/console doctrine:database:create
 mysql -u<db_user> -p<db_pass> <db_name> < ./data/comprate.sql
+php bin/console doctrine:schema:update
 ```
 
 ###Установить права для директорий
