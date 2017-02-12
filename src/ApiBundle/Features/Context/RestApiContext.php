@@ -2,15 +2,12 @@
 namespace ApiBundle\Features\Context;
 
 use Behat\Behat\Context\Context;
+use Behat\Behat\Tester\Exception\PendingException;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
-use Guzzle\Http\Message\Request;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Post\PostFile;
 use PHPUnit_Framework_Assert as Assertions;
-use Sanpi\Behatch\Json\JsonInspector;
-use Sanpi\Behatch\Json\JsonSchema;
 
 /**
  * Class RestApiContext
@@ -18,10 +15,6 @@ use Sanpi\Behatch\Json\JsonSchema;
  */
 class RestApiContext implements Context
 {
-    /**
-     * @var string
-     */
-    private $authorization;
 
     /**
      * @var ClientInterface
@@ -34,12 +27,12 @@ class RestApiContext implements Context
     private $headers = array();
 
     /**
-     * @var \GuzzleHttp\Message\RequestInterface
+     * @var \Psr\Http\Message\RequestInterface
      */
     private $request;
 
     /**
-     * @var \GuzzleHttp\Message\ResponseInterface
+     * @var \Psr\Http\Message\ResponseInterface
      */
     private $response;
 
@@ -47,135 +40,15 @@ class RestApiContext implements Context
      * @var array
      */
     private $placeHolders = array();
-    /**
-     * @var string
-     */
-    private $dummyDataPath;
+
 
     /**
      * RestApiContext constructor.
      * @param ClientInterface   $client
-     * @param string            $dummyDataPath
      */
-    public function __construct(ClientInterface $client, $dummyDataPath = null)
+    public function __construct(ClientInterface $client)
     {
         $this->client = $client;
-        $this->dummyDataPath = $dummyDataPath;
-    }
-
-    /**
-     * Adds Basic Authentication header to next request.
-     *
-     * @param string $username
-     * @param string $password
-     *
-     * @Given /^I am authenticating as "([^"]*)" with "([^"]*)" password$/
-     */
-    public function iAmAuthenticatingAs($username, $password)
-    {
-        $this->removeHeader('Authorization');
-        $this->authorization = base64_encode($username . ':' . $password);
-        $this->addHeader('Authorization', 'Basic ' . $this->authorization);
-    }
-
-    /**
-     * Adds JWT Token to Authentication header for next request
-     *
-     * @param string $username
-     * @param string $password
-     *
-     * @Given /^I am successfully logged in with username: "([^"]*)", and password: "([^"]*)"$/
-     */
-    public function iAmSuccessfullyLoggedInWithUsernameAndPassword($username, $password)
-    {
-        $response = $this->client->post('login', [
-            'json' => [
-                'username' => $username,
-                'password' => $password,
-            ]
-        ]);
-
-        \PHPUnit_Framework_Assert::assertEquals(200, $response->getStatusCode());
-
-        $responseBody = json_decode($response->getBody(), true);
-        $this->addHeader('Authorization', 'Bearer ' . $responseBody['token']);
-    }
-
-    /**
-     * @Given when consuming the endpoint I use the :header of :value
-     */
-    public function whenConsumingTheEndpointIUseTheOf($header, $value)
-    {
-        $this->client->setDefaultOption($header, $value);
-    }
-
-    /**
-     * @When I have forgotten to set the :header
-     */
-    public function iHaveForgottenToSetThe($header)
-    {
-        $this->client->setDefaultOption($header, null);
-    }
-
-    /**
-     * Sets a HTTP Header.
-     *
-     * @param string $name  header name
-     * @param string $value header value
-     *
-     * @Given /^I set header "([^"]*)" with value "([^"]*)"$/
-     */
-    public function iSetHeaderWithValue($name, $value)
-    {
-        $this->addHeader($name, $value);
-    }
-
-    /**
-     * Sends HTTP request to specific relative URL.
-     *
-     * @param string $method request method
-     * @param string $url    relative url
-     *
-     * @When /^(?:I )?send a "([A-Z]+)" request to "([^"]+)"$/
-     */
-    public function iSendARequest($method, $url)
-    {
-        $url = $this->prepareUrl($url);
-        $this->request = $this->getClient()->createRequest($method, $url);
-        if (!empty($this->headers)) {
-            $this->request->addHeaders($this->headers);
-        }
-
-        $this->sendRequest();
-    }
-
-    /**
-     * Sends HTTP request to specific URL with field values from Table.
-     *
-     * @param string    $method request method
-     * @param string    $url    relative url
-     * @param TableNode $post   table of post values
-     *
-     * @When /^(?:I )?send a ([A-Z]+) request to "([^"]+)" with values:$/
-     */
-    public function iSendARequestWithValues($method, $url, TableNode $post)
-    {
-        $url = $this->prepareUrl($url);
-        $fields = array();
-
-        foreach ($post->getRowsHash() as $key => $val) {
-            $fields[$key] = $this->replacePlaceHolder($val);
-        }
-
-        $bodyOption = array(
-            'body' => json_encode($fields),
-        );
-        $this->request = $this->getClient()->createRequest($method, $url, $bodyOption);
-        if (!empty($this->headers)) {
-            $this->request->addHeaders($this->headers);
-        }
-
-        $this->sendRequest();
     }
 
     /**
@@ -187,7 +60,7 @@ class RestApiContext implements Context
      *
      * @When /^(?:I )?send a ([A-Z]+) request to "([^"]+)" with following JSON:$/
      */
-    public function iSendARequestWithJSON($method, $url, TableNode $post)
+    public function iSendAGETRequestToWithFollowingJSON($method, $url, TableNode $post)
     {
         $url = $this->prepareUrl($url);
         $fields = array();
@@ -198,107 +71,48 @@ class RestApiContext implements Context
 
         $bodyOption = array(
             'body' => json_encode($fields),
+            'headers'   => $this->headers
         );
-        $this->request = $this->getClient()->createRequest($method, $url, $bodyOption);
-        if (!empty($this->headers)) {
-            $this->request->addHeaders($this->headers);
-        }
+        $this->request = $this->getClient()->request($method, $url, $bodyOption);
 
         $this->sendRequest();
     }
 
     /**
-     * Sends HTTP request to specific URL with raw body from PyString.
+     * Checks that response body contains JSON from PyString.
      *
-     * @param string       $method request method
-     * @param string       $url    relative url
-     * @param PyStringNode $string request body
+     * Do not check that the response body /only/ contains the JSON from PyString,
      *
-     * @When /^(?:I )?send a "([A-Z]+)" request to "([^"]+)" with body:$/
+     * @param PyStringNode $jsonString
+     *
+     * @throws \RuntimeException
+     *
+     * @Then /^(?:I )?should get following JSON response:$/
      */
-    public function iSendARequestWithBody($method, $url, PyStringNode $string)
+    public function iShouldGetFollowingJsonResponse(PyStringNode $jsonString)
     {
-        $url = $this->prepareUrl($url);
-        $string = $this->replacePlaceHolder(trim($string));
+        $etalon = json_decode($this->replacePlaceHolder($jsonString->getRaw()), true);
+        $actual = $this->response->json();
 
-        $this->request = $this->getClient()->createRequest(
-            $method,
-            $url,
-            array(
-                'headers' => $this->getHeaders(),
-                'body' => $string,
-            )
-        );
+        if (null === $etalon) {
+            throw new \RuntimeException(
+                "Can not convert etalon to json:\n" . $this->replacePlaceHolder($jsonString->getRaw())
+            );
+        }
 
-        $this->sendRequest();
+        Assertions::assertGreaterThanOrEqual(count($etalon), count($actual));
+        foreach ($etalon as $key => $needle) {
+            Assertions::assertArrayHasKey($key, $actual);
+            Assertions::assertEquals($etalon[$key], $actual[$key]);
+        }
     }
 
     /**
-     * Sends HTTP request to specific URL with form data from PyString.
-     *
-     * @param string       $method request method
-     * @param string       $url    relative url
-     * @param PyStringNode $body   request body
-     *
-     * @When /^(?:I )?send a "([A-Z]+)" request to "([^"]+)" with form data:$/
+     * @Given the following cpus exist:
      */
-    public function iSendARequestWithFormData($method, $url, PyStringNode $body)
+    public function theFollowingCpusExist(TableNode $table)
     {
-        $url = $this->prepareUrl($url);
-        $body = $this->replacePlaceHolder(trim($body));
-
-        $fields = array();
-        parse_str(implode('&', explode("\n", $body)), $fields);
-        $this->request = $this->getClient()->createRequest($method, $url);
-        /** @var \GuzzleHttp\Post\PostBodyInterface $requestBody */
-        $requestBody = $this->request->getBody();
-        foreach ($fields as $key => $value) {
-            $requestBody->setField($key, $value);
-        }
-
-        $this->sendRequest();
-    }
-
-    /**
-     * @When /^(?:I )?send a multipart "([A-Z]+)" request to "([^"]+)" with form data:$/
-     */
-    public function iSendAMultipartRequestToWithFormData($method, $url, TableNode $post)
-    {
-        $url = $this->prepareUrl($url);
-
-        $this->request = $this->getClient()->createRequest($method, $url);
-
-        $data = $post->getColumnsHash()[0];
-
-        $hasFile = false;
-
-        if (array_key_exists('filePath', $data)) {
-            $filePath = $this->dummyDataPath . $data['filePath'];
-            unset($data['filePath']);
-            $hasFile = true;
-        }
-
-
-        /** @var \GuzzleHttp\Post\PostBodyInterface $requestBody */
-        $requestBody = $this->request->getBody();
-        foreach ($data as $key => $value) {
-            $requestBody->setField($key, $value);
-        }
-
-
-        if ($hasFile) {
-            $file = fopen($filePath, 'rb');
-            $postFile = new PostFile('uploadedFile', $file);
-            $requestBody->addFile($postFile);
-        }
-
-
-        if (!empty($this->headers)) {
-            $this->request->addHeaders($this->headers);
-        }
-        $this->request->setHeader('Content-Type', 'multipart/form-data');
-
-        $this->sendRequest();
+        throw new PendingException();
     }
 
     /**
@@ -306,7 +120,7 @@ class RestApiContext implements Context
      *
      * @param string $code status code
      *
-     * @Then the response code should :arg1
+     * @Then the response code should be :arg1
      */
     public function theResponseCodeShouldBe($code)
     {
@@ -401,77 +215,6 @@ class RestApiContext implements Context
     }
 
     /**
-     * Prepare URL by replacing placeholders and trimming slashes.
-     *
-     * @param string $url
-     *
-     * @return string
-     */
-    private function prepareUrl($url)
-    {
-        return ltrim($this->replacePlaceHolder($url), '/');
-    }
-
-    /**
-     * Sets place holder for replacement.
-     *
-     * you can specify placeholders, which will
-     * be replaced in URL, request or response body.
-     *
-     * @param string $key   token name
-     * @param string $value replace value
-     */
-    public function setPlaceHolder($key, $value)
-    {
-        $this->placeHolders[$key] = $value;
-    }
-
-    /**
-     * @Then the I follow the link in the Location response header
-     */
-    public function theIFollowTheLinkInTheLocationResponseHeader()
-    {
-        $location = $this->response->getHeader('Location');
-
-        $this->iSendARequest(Request::GET, $location);
-    }
-
-    /**
-     * @Then the JSON should be valid according to this schema:
-     */
-    public function theJsonShouldBeValidAccordingToThisSchema(PyStringNode $schema)
-    {
-        $inspector = new JsonInspector('javascript');
-
-        $json = new \Sanpi\Behatch\Json\Json(json_encode($this->response->json()));
-
-        $inspector->validate(
-            $json,
-            new JsonSchema($schema)
-        );
-    }
-
-    /**
-     * Checks, that given JSON node is equal to given value
-     *
-     * @Then the JSON node :node should be equal to :text
-     */
-    public function theJsonNodeShouldBeEqualTo($node, $text)
-    {
-        $json = new \Sanpi\Behatch\Json\Json(json_encode($this->response->json()));
-
-        $inspector = new JsonInspector('javascript');
-
-        $actual = $inspector->evaluate($json, $node);
-
-        if ($actual != $text) {
-            throw new \Exception(
-                sprintf("The node value is '%s'", json_encode($actual))
-            );
-        }
-    }
-
-    /**
      * Replaces placeholders in provided text.
      *
      * @param string $string
@@ -542,6 +285,18 @@ class RestApiContext implements Context
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Prepare URL by replacing placeholders and trimming slashes.
+     *
+     * @param string $url
+     *
+     * @return string
+     */
+    private function prepareUrl($url)
+    {
+        return ltrim($this->replacePlaceHolder($url), '/');
     }
 
     /**

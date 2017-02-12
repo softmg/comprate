@@ -8,7 +8,6 @@ default:
                     doctrine: "@doctrine"
                 - ApiBundle\Features\Context\RestApiContext:
                     client: "@csa_guzzle.client.local_test_api"
-                    dummyDataPath: "%paths.base%/features/dummy/"
     extensions:
         Behat\Symfony2Extension:
             kernel:

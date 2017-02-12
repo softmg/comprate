@@ -15,7 +15,8 @@ Feature: Cpus
       "pageSize": 2
     }
     """
-    Then I should get following json response:
+    Then the response code should be 200
+    And I should get following JSON response:
     """
     [
       {
