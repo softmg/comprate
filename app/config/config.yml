@@ -83,3 +83,59 @@ sonata_block:
         # enable the SonataAdminBundle block
         sonata.admin.block.admin_list:
             contexts:   [admin]
+
+# Nelmio CORS
+nelmio_cors:
+    defaults:
+        allow_origin:  ["%cors_allow_origin%"]
+        allow_methods: ["POST", "PUT", "GET", "DELETE", "OPTIONS"]
+        allow_headers: ["content-type", "authorization"]
+        max_age:       3600
+    paths:
+        '^/': ~
+
+# Nelmio API Doc
+nelmio_api_doc:
+    sandbox:
+        accept_type:        "application/json"
+        body_format:
+            formats:        [ "json" ]
+            default_format: "json"
+        request_format:
+            formats:
+                json:       "application/json"
+
+# FOS REST Bundle
+fos_rest:
+    body_listener: true
+    format_listener:  true
+    param_fetcher_listener: true
+    view:
+        view_response_listener: 'force'
+        exception_wrapper_handler:  null
+        formats:
+            jsonp: true
+            json: true
+            xml: false
+            rss: false
+        mime_types:
+            json: ['application/json', 'application/x-json']
+            jpg: 'image/jpeg'
+            png: 'image/png'
+        jsonp_handler: ~
+    routing_loader:
+        default_format:  json
+        include_format:  false
+    format_listener:
+        rules:
+            - { path: ^/, priorities: [ json, jsonp ], fallback_format: ~, prefer_extension: true }
+    exception:
+        enabled: true
+
+# JMS Serializer
+jms_serializer:
+    metadata:
+        directories:
+            FOSUB:
+                namespace_prefix: FOS\UserBundle
+                path: %kernel.root_dir%/serializer/FOSUB

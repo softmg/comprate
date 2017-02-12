@@ -1,0 +1,14 @@
+default:
+    suites:
+        default:
+            contexts:
+                - FeatureContext:
+                    doctrine: "@doctrine"
+    extensions:
+        Behat\Symfony2Extension: ~
+
+        Behat\MinkExtension:
+            base_url: "http://comprate.loc/app_dev.php/"
+            sessions:
+                default:
+                    symfony2: ~
