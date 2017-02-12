@@ -8,7 +8,7 @@ Feature: Motherboards
 
 
   Scenario: Get available motherboards
-    When I send a GET request to "/computers/motherboards" with following JSON:
+    When I send a GET request to "/products/motherboard/list" with following JSON:
     """
     {
       "page": 1,

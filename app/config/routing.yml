@@ -8,11 +8,6 @@ computer:
     type:     annotation
     prefix:   /computer
 
-api:
-    resource: "@ApiBundle/Controller/"
-    type:     annotation
-    prefix:   /api
-
 parsing:
     resource: "@ParsingBundle/Controller/"
     type:     annotation
@@ -35,3 +30,7 @@ _sonata_admin:
 NelmioApiDocBundle:
     resource: "@NelmioApiDocBundle/Resources/config/routing.yml"
     prefix:   /api/doc
+
+api:
+    type: rest
+    resource: "@ApiBundle/Resources/config/routing_api.yml"
