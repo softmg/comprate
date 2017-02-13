@@ -53,3 +53,9 @@ services:
             - ~
         calls:
             - [ setTranslationDomain, [ProductBundle]]
+
+    product.admin.product_attribute:
+        class: ProductBundle\Admin\ProductAttributeAdmin
+        arguments: [~, ProductBundle\Entity\ProductAttribute, SonataAdminBundle:CRUD]
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Product", label: ProductAttribute }

@@ -155,6 +155,8 @@ class ProductAttribute
         return $this->value;
     }
 
+
+
     /**
      * Set maxValue
      *

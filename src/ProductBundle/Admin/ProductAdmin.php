@@ -8,6 +8,7 @@ use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Show\ShowMapper;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 
+
 class ProductAdmin extends AbstractAdmin
 {
     // Fields to be shown on create/edit forms
@@ -24,15 +25,11 @@ class ProductAdmin extends AbstractAdmin
                 'required' => true,
                 'multiple' => false,
                 'expanded' => true
-            ])
-            ->add('productAttributes', EntityType::class, [
-                'label' => 'Характеристики',
-                'class' => 'ProductBundle:ProductAttribute',
-                'choice_label' => 'name',
-                'required' => true,
-                'multiple' => true,
-                'expanded' => true
-            ])
+            ])->end()->with('productAttributes')->add('productAttributes', 'sonata_type_collection', ['by_reference' => false],[
+                    'edit' => 'inline',
+                    'inline' => 'table',
+                    'sortable' => 'name',
+                ])
         ;
     }
 
@@ -51,6 +48,7 @@ class ProductAdmin extends AbstractAdmin
         $listMapper
             ->addIdentifier('name')
             ->add('vendor')
+            ->add("ProductAttributesString")
         ;
     }
 
@@ -63,4 +61,6 @@ class ProductAdmin extends AbstractAdmin
             ->add('attributes')
         ;
     }
+
+
 }

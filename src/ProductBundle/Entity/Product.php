@@ -67,7 +67,7 @@ class Product
     private $price;
 
     /**
-     * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="product")
+     * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="product", cascade={"persist"})
      */
     private $productAttributes;
 
@@ -239,6 +239,28 @@ class Product
     public function getProductAttributes()
     {
         return $this->productAttributes;
+    }
+
+    /**
+     * @return string
+     */
+    public function getProductAttributesString()
+    {   $res = [];
+        /** @var ProductAttribute $attr */
+        foreach($this->getProductAttributes() as $attr){
+            $res[] = $attr->getValue();
+        }
+        return join(", ", $res);
+    }
+
+
+    /**
+     * @param mixed $productAttribute
+     */
+    public function addProductAttribute($productAttribute){
+        $productAttribute->setProduct($this);
+        $this->productAttributes->add($productAttribute);
+        return $this;
     }
 
     /**
