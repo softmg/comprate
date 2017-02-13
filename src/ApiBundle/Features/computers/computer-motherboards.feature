@@ -8,14 +8,14 @@ Feature: Motherboards
 
 
   Scenario: Get available motherboards
-    When I send GET request to "/computers/motherboards" with following json:
+    When I send a GET request to "/products/motherboard/list" with following JSON:
     """
     {
       "page": 1,
       "pageSize": 2
     }
     """
-    Then I should get following json response:
+    Then I should get following JSON response:
     """
     [
       {

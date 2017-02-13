@@ -8,14 +8,15 @@ Feature: Cpus
 
 
   Scenario: Get available cpu
-    When I send GET request to "/computers/cpus" with following json:
+    When I send a GET request to "/products/cpu/list" with following JSON:
     """
     {
       "page": 1,
       "pageSize": 2
     }
     """
-    Then I should get following json response:
+    Then the response code should be 200
+    And I should get following JSON response:
     """
     [
       {
@@ -32,8 +33,8 @@ Feature: Cpus
       },
       {
         "cpu_vendor": "Intel"
-        "line": "Intel Core i3",
-        "socket": "LGA1151",
+        "cpu_line": "Intel Core i3",
+        "cpu_socket": "LGA1151",
         "cpu_core": "Sandy Bridge (2011)",
         "cpu_frequency": 3200,
         "cpu_l1_cache": 64,

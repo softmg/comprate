@@ -17,3 +17,10 @@ parameters:
 
     # A secret key that's used to generate certain security-related tokens
     secret:            ThisTokenIsNotSoSecretChangeIt
+
+    # nelmio cors
+    cors_allow_origin: 'http://composer.loc'
+
+    # nelmio api docs
+    api_name: 'Comprate REST frontend'
+    api_description: 'REST API for frontend'

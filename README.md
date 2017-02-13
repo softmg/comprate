@@ -22,10 +22,14 @@ git checkout master
 изменить файл ./app/config/parameters.yml
 ```
 
-###Поднять базу данных
+###Поднять базу данных для сайта и acceptance окружения
 ```bash
 php bin/console doctrine:database:create
 mysql -u<db_user> -p<db_pass> <db_name> < ./data/comprate.sql
+php bin/console doctrine:schema:update --force
+php bin/console doctrine:database:create --env=acceptance
+mysql -u<db_user> -p<db_pass> <db_name>_acceptance < ./data/comprate.sql
+php bin/console doctrine:schema:update --force --env=acceptance
 ```
 
 ###Установить права для директорий
@@ -53,6 +57,11 @@ php composer.phar install -o
         Allow from All
     </Directory>
 </VirtualHost>
+```
+
+###Запустить тесты
+```bash
+vendor/bin/behat
 ```
 
 ###Описание бандлов проекта
