@@ -1,4 +1,4 @@
 services:
-#    computer.example:
-#        class: ComputerBundle\Example
-#        arguments: ["@service_id", "plain_value", "%parameter%"]
+    computer.create:
+        class: ComputerBundle\Service\Computer
+        arguments: ["@doctrine.orm.entity_manager"]
