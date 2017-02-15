@@ -112,7 +112,7 @@ class RestApiContext implements Context
      */
     public function theFollowingCpusExist(TableNode $table)
     {
-        throw new PendingException();
+        //throw new PendingException();
     }
 
     /**

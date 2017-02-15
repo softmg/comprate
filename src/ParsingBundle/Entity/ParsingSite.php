@@ -12,6 +12,8 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class ParsingSite
 {
+    const YANDEX_MARKET = 'yandex_market';
+
     /**
      * @var int
      *
@@ -34,6 +36,20 @@ class ParsingSite
      * @ORM\Column(name="url", type="string", length=255)
      */
     private $url;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="code", type="string", length=255, nullable=true)
+     */
+    private $code;
+
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="use_proxy", type="boolean", nullable=true)
+     */
+    private $useProxy = false;
 
 
     /**
@@ -93,5 +109,36 @@ class ParsingSite
     {
         return $this->url;
     }
-}
 
+    /**
+     * @return string
+     */
+    public function getCode()
+    {
+        return $this->code;
+    }
+
+    /**
+     * @param string $code
+     */
+    public function setCode($code)
+    {
+        $this->code = $code;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isUseProxy()
+    {
+        return $this->useProxy;
+    }
+
+    /**
+     * @param boolean $useProxy
+     */
+    public function setUseProxy($useProxy)
+    {
+        $this->useProxy = $useProxy;
+    }
+}

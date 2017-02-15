@@ -1,4 +1,8 @@
 services:
-#    parsing.example:
-#        class: ParsingBundle\Example
-#        arguments: ["@service_id", "plain_value", "%parameter%"]
+    parsing.proxy_list:
+        class: ParsingBundle\Service\ProxyList
+        arguments: ["@doctrine.orm.entity_manager"]
+
+    parsing.yandex_market:
+        class: ParsingBundle\Service\YandexMarketParser
+        arguments: ["@doctrine.orm.entity_manager", "@parsing.proxy_list"]
