@@ -29,7 +29,7 @@ class ProxyList
      * Get active ip which was used self::TIME_INTERVAL seconds before NOW
      * @param boolean $updateLaunchTime
      * @param boolean $withLog
-     * @return String
+     * @return array
      */
     public function getWhiteIp($updateLaunchTime = true, $withLog = false)
     {
@@ -51,12 +51,15 @@ class ProxyList
         }
 
         if ($updateLaunchTime) {
-            $proxyIp->setLastUse(new \DateTime());
+            $proxyIp->setLastUsed(new \DateTime());
             $this->em->persist($proxyIp);
             $this->em->flush();
         }
 
-        return $proxyIp->getIp();
+        return [
+                $proxyIp->getIp(),
+                $proxyIp->getUserAgent(),
+            ];
     }
 
     private function tryToGetWhiteIp()
@@ -64,17 +67,19 @@ class ProxyList
         $proxyIpRepo = $this->em->getRepository('ParsingBundle:ProxyIp');
 
         /* check if we have even one active IP in db */
-        if (!$proxyIpRepo->findOneBy(['status' => 1])) {
+        if (!$proxyIpRepo->findOneBy(['isActive' => 1])) {
             throw new \Exception('In database we does not have active ip');
         }
 
-        $qb = $proxyIpRepo->createQueryBuilder('ip');
-        $sqlCheckTime = "DATE_SUB(NOW(), Interval " . self::TIME_INTERVAL . " SECOND)";
-        $proxyIp = $qb
-            ->where(['status' => 1])
-            ->andWhere("ip.lastUse <= {$sqlCheckTime} OR ip.lastUse is NULL")
-            ->orderBy(['ip.lastUse' => SORT_ASC])
-            ->getFirstResult();
+        $proxyIp = $proxyIpRepo->createQueryBuilder('ip')
+            ->where('ip.isActive = 1')
+            ->andWhere("ip.lastUsed <= :checkDate")
+            ->setParameter('checkDate', new \DateTime("-" . self::TIME_INTERVAL . "seconds"))
+            ->orderBy('ip.lastUsed', 'ASC')
+            ->getQuery()
+            ->setMaxResults(1)
+            ->getOneOrNullResult()
+            ;
 
         return $proxyIp;
     }

@@ -8,20 +8,22 @@
 namespace ParsingBundle\Service;
 
 use Doctrine\ORM\EntityManager;
+use Goutte\Client;
 use ParsingBundle\Entity\ParsingSite;
 use ParsingBundle\Repository\ParsingProductInfoRepository;
 use ParsingBundle\Repository\ParsingSiteRepository;
+use Symfony\Component\DomCrawler\Crawler;
 
 abstract class BaseParser
 {
-    const SEARCH_URL = 'https://market.yandex.ru/search.xml?text=%s';
-    const PRODUCT_URL = 'https://market.yandex.ru/product/%d/spec';
-
     /** @var  EntityManager */
     private $em;
 
     /** @var  ProxyList */
     private $proxyList;
+
+    /** @var  array */
+    private $clientParameters = [];
 
     /**
      * @param \Doctrine\ORM\EntityManager $em
@@ -80,5 +82,45 @@ abstract class BaseParser
     public function getParsingProductInfoRepo()
     {
         return $this->em->getRepository('ParsingBundle:ParsingProductInfo');
+    }
+
+    /**
+     * @param  array $params
+     * @return array
+     */
+    public function setClientParameters($params)
+    {
+        return $this->clientParameters = $params;
+    }
+
+    /**
+     * @return Client
+     */
+    public function getClient()
+    {
+        $goutteClient = new Client();
+        /* check use proxy ip */
+        if ($this->getParserSite()->isUseProxy() && !isset($this->clientParameters['proxy'])) {
+            list($ip, $userAgent) = $this->proxyList->getWhiteIp(true, true);
+            $this->clientParameters['proxy'] = $ip;
+            $this->clientParameters['headers']['User-Agent'] = $userAgent;
+        }
+        $guzzleClient = new \GuzzleHttp\Client($this->clientParameters);
+        $goutteClient->setClient($guzzleClient);
+
+        return $goutteClient;
+    }
+
+    /**
+     * @param String $pageUrl
+     * @return Crawler
+     */
+    public function getCrawlerPage($pageUrl)
+    {
+        $client = $this->getClient();
+        //TODO: cache results
+        $crawler = $client->request('GET', $pageUrl);
+
+        return  $crawler;
     }
 }

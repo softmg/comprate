@@ -45,9 +45,9 @@ class ProxyIp
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="last_use", type="datetime", nullable=true)
+     * @ORM\Column(name="last_used", type="datetime", nullable=true)
      */
-    private $lastUse;
+    private $lastUsed;
 
 
     /**
@@ -133,26 +133,26 @@ class ProxyIp
     }
 
     /**
-     * Set lastUse
+     * Set lastUsed
      *
-     * @param \DateTime $lastUse
+     * @param \DateTime $lastUsed
      *
      * @return ProxyIp
      */
-    public function setLastUse($lastUse)
+    public function setLastUsed($lastUsed)
     {
-        $this->lastUse = $lastUse;
+        $this->lastUsed = $lastUsed;
 
         return $this;
     }
 
     /**
-     * Get lastUse
+     * Get lastUsed
      *
      * @return \DateTime
      */
-    public function getLastUse()
+    public function getLastUsed()
     {
-        return $this->lastUse;
+        return $this->lastUsed;
     }
 }
