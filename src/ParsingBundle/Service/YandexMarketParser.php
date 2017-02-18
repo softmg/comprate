@@ -8,6 +8,7 @@
 namespace ParsingBundle\Service;
 
 use ParsingBundle\Entity\ParsingSite;
+use Symfony\Component\DomCrawler\Crawler;
 
 class YandexMarketParser extends BaseParser
 {
@@ -21,7 +22,12 @@ class YandexMarketParser extends BaseParser
     {
         $site = $this->getParserSiteAndCheck();
 
-       
+        //$client = $this->getClient();
+        //$crawler = $client->request('GET', 'http://test1.softmg.ru/testip.php');
+        $this->getProductId('Intel Xeon E3-1290 V2 @ 3.70GHz');
+        //$crawlerPage = $this->getCrawlerPage('http://test1.softmg.ru/testip.php');
+        var_dump(1);
+        exit;
     }
 
     /**
@@ -30,6 +36,37 @@ class YandexMarketParser extends BaseParser
     public function getParserSiteCode()
     {
         return ParsingSite::YANDEX_MARKET;
+    }
+
+    /**
+     * @param Crawler $crawler
+     * @return Crawler
+     */
+    public function recognizeAndEnterCaptcha($crawler)
+    {
+        $captchaCrawler = $crawler->filter('.captcha');
+        if ($captchaCrawler) {
+            $this->dump(" CAPTCHA! Try to recognize captcha");
+
+            $rucaptcha = new \Rucaptcha\Client($this->getRucaptchaToken());
+            $captchaText = false;
+            //$captchaText = $rucaptcha->recognizeFile('https://i.captcha.yandex.net/image?key=10ixnGFOj1QCQ9ZxeMOnn9p4e3KekF40');
+
+            if ($captchaText) {
+                $this->dump(" recognize captcha and try again");
+
+                $form = $crawler->selectButton('sign in')->form();
+                $crawler = $this->getGoutteClient()->submit($form, array(
+                    'captcha' => $captchaText
+                ));
+            } else {
+                /* set crawler to null if not success captcha */
+                $crawler = null;
+                $this->dump(" CAPTCHA FAIL!");
+            }
+        }
+
+        return $crawler;
     }
 
     /**
@@ -58,7 +95,6 @@ class YandexMarketParser extends BaseParser
 
 
         if (isset($parseUrl['path'])) {
-            $output = explode('product/', $parseUrl['path']);
             if (isset($output[1]) && is_numeric($output[1])) {
                 $result = $output[1];
             }

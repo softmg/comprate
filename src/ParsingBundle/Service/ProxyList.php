@@ -17,38 +17,37 @@ class ProxyList
     /** @var  EntityManager */
     private $em;
 
+    /** @var bool */
+    private $debug = false;
+
     /**
      * @param \Doctrine\ORM\EntityManager $em
      */
     public function __construct(EntityManager $em)
     {
         $this->em = $em;
+
+        /* if cli command then debug = true*/
+        $this->debug = php_sapi_name() == 'cli';
     }
 
     /**
      * Get active ip which was used self::TIME_INTERVAL seconds before NOW
      * @param boolean $updateLaunchTime
-     * @param boolean $withLog
-     * @return array
+     * @return ProxyIp
      */
-    public function getWhiteIp($updateLaunchTime = true, $withLog = false)
+    public function getWhiteIp($updateLaunchTime = true)
     {
-        if ($withLog) {
-            echo "\r\n - - -  Try to get white IP - - - \r\n";
-        }
+        $this->dump("- - -  Try to get white IP - - -");
 
         /** @var $proxyIp ProxyIp */
         while (! $proxyIp = $this->tryToGetWhiteIp()) {
-            /* whait 1 second to get next ip */
-            if ($withLog) {
-                echo "All proxy ips used, waiting 1 second \r\n";
-            }
+            /* wait 1 second to get next ip */
+            $this->dump("All proxy ips used, waiting 1 second \r\n");
             sleep(1);
         }
 
-        if ($withLog) {
-            echo "Get white ip {$proxyIp->getIp()} \r\n";
-        }
+        $this->dump("Get white ip {$proxyIp->getIp()}");
 
         if ($updateLaunchTime) {
             $proxyIp->setLastUsed(new \DateTime());
@@ -56,10 +55,7 @@ class ProxyList
             $this->em->flush();
         }
 
-        return [
-                $proxyIp->getIp(),
-                $proxyIp->getUserAgent(),
-            ];
+        return $proxyIp;
     }
 
     private function tryToGetWhiteIp()
@@ -82,5 +78,20 @@ class ProxyList
             ;
 
         return $proxyIp;
+    }
+    
+    public function addProxyIpFail($proxyIp)
+    {
+        
+    }
+
+    /**
+     * @param String $message
+     */
+    private function dump($message)
+    {
+        if ($this->debug) {
+            echo "$message\r\n";
+        }
     }
 }
