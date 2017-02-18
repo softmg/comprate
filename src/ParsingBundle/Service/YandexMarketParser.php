@@ -8,7 +8,9 @@
 namespace ParsingBundle\Service;
 
 use ParsingBundle\Entity\ParsingSite;
+use ProductBundle\Entity\Product;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\DomCrawler\Link;
 
 class YandexMarketParser extends BaseParser
 {
@@ -20,14 +22,33 @@ class YandexMarketParser extends BaseParser
      */
     public function run()
     {
-        $site = $this->getParserSiteAndCheck();
+        $products = $this->getProductsForFirstParsing();
+
+        foreach ($products as $product) {
+            $this->getProductAttributes($product);
+        }
+        var_dump($products); exit;
 
         //$client = $this->getClient();
         //$crawler = $client->request('GET', 'http://test1.softmg.ru/testip.php');
-        $this->getProductId('Intel Xeon E3-1290 V2 @ 3.70GHz');
+        $this->getProductUrl('Intel Xeon E3-1290 V2 @ 3.70GHz');
         //$crawlerPage = $this->getCrawlerPage('http://test1.softmg.ru/testip.php');
         var_dump(1);
         exit;
+    }
+
+    /**
+     * @param Product $product
+     */
+    public function getProductAttributes($product)
+    {
+        $productUrl = $this->getProductUrl($product->getName());
+        $this->saveProductInfo($product, $productUrl);
+        //$domLink = new Link($link, sprintf(self::SEARCH_URL, $product->getName()));
+        $link = $this->getCrawler()->selectLink($productUrl)->link();
+        $crawler = $this->getGoutteClient()->click($link);
+
+        var_dump($crawler); exit;
     }
 
     /**
@@ -73,11 +94,10 @@ class YandexMarketParser extends BaseParser
     * Get product id by product name on site
     * @param string $productName название товара
     * @throws \Exception
-    * @return bool|int
+    * @return String
     */
-    private function getProductId($productName)
+    private function getProductUrl($productName)
     {
-        $result = false;
         $urlForRequest = sprintf(self::SEARCH_URL, $productName);
 
         $crawlerPage = $this->getCrawlerPage($urlForRequest);
@@ -87,20 +107,8 @@ class YandexMarketParser extends BaseParser
         }
 
         $header_link = $crawlerPage->filter('.snippet-card__header-link');
-        var_dump($header_link); exit;
-        if ($header_link) {
-            $checkUrl = $header_link->href;
-            $parseUrl = parse_url($checkUrl);
-        }
+        $yandexProductLink = $header_link->getNode(0);
 
-
-        if (isset($parseUrl['path'])) {
-            if (isset($output[1]) && is_numeric($output[1])) {
-                $result = $output[1];
-            }
-        }
-
-
-        return $result;
+        return $yandexProductLink->getAttribute('href');
     }
 }

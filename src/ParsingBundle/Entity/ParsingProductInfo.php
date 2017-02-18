@@ -45,6 +45,30 @@ class ParsingProductInfo
      */
     private $url;
 
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="created_at", type="datetime")
+     */
+    private $createdAt;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="updated_at", type="datetime")
+     */
+    private $updatedAt;
+
+    /**
+     * ParsingProductInfo constructor.
+     */
+    public function __construct()
+    {
+        $this->setUpdatedAt(new \DateTime('now'));
+        if (!$this->getCreatedAt()) {
+            $this->setCreatedAt(new \DateTime('now'));
+        }
+    }
 
     /**
      * Get id
@@ -83,7 +107,7 @@ class ParsingProductInfo
     /**
      * Set site
      *
-     * @param integer $site
+     * @param ParsingSite $site
      *
      * @return ParsingProductInfo
      */
@@ -97,7 +121,7 @@ class ParsingProductInfo
     /**
      * Get site
      *
-     * @return int
+     * @return ParsingSite
      */
     public function getSite()
     {
@@ -127,5 +151,36 @@ class ParsingProductInfo
     {
         return $this->url;
     }
-}
 
+    /**
+     * @return string
+     */
+    public function getCreatedAt()
+    {
+        return $this->createdAt;
+    }
+
+    /**
+     * @param string $createdAt
+     */
+    public function setCreatedAt($createdAt)
+    {
+        $this->createdAt = $createdAt;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUpdatedAt()
+    {
+        return $this->updatedAt;
+    }
+
+    /**
+     * @param string $updatedAt
+     */
+    public function setUpdatedAt($updatedAt)
+    {
+        $this->updatedAt = $updatedAt;
+    }
+}

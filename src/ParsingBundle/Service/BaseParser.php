@@ -9,15 +9,19 @@ namespace ParsingBundle\Service;
 
 use Doctrine\ORM\EntityManager;
 use Goutte\Client;
+use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
 use ParsingBundle\Entity\ProxyIp;
 use ParsingBundle\Repository\ParsingProductInfoRepository;
 use ParsingBundle\Repository\ParsingSiteRepository;
+use ProductBundle\Entity\Product;
 use Symfony\Component\DomCrawler\Crawler;
 use \ForceUTF8\Encoding;
 
 abstract class BaseParser
 {
+    const PRODUCT_ACTUALITY = 10;
+
     /** @var  EntityManager */
     private $em;
 
@@ -32,6 +36,9 @@ abstract class BaseParser
 
     /** @var  Client */
     private $goutteClient;
+
+    /** @var  Crawler */
+    private $crawler;
 
     /** @var  array */
     private $clientParameters = [];
@@ -189,6 +196,8 @@ abstract class BaseParser
             }
         }
 
+        $this->crawler = $crawler;
+
         return  $crawler;
     }
 
@@ -278,6 +287,14 @@ abstract class BaseParser
     }
 
     /**
+     * @return Crawler
+     */
+    protected function getCrawler()
+    {
+        return $this->crawler;
+    }
+
+    /**
      * @return String
      */
     protected function getRucaptchaToken()
@@ -300,5 +317,46 @@ abstract class BaseParser
     public function setProxyUserpasswd($proxy_userpasswd)
     {
         $this->proxy_userpasswd = $proxy_userpasswd;
+    }
+
+    /**
+     * Save product info into db
+     * @param Product $product
+     * @param String $productUrl
+     */
+    protected function saveProductInfo($product, $productUrl)
+    {
+        //TODO: find to update
+        $productInfo = new ParsingProductInfo();
+        $productInfo->setUrl($productUrl);
+        $productInfo->setProduct($product);
+        $productInfo->setSite($this->getParserSite());
+
+        $this->em->persist($productInfo);
+        $this->em->flush();
+
+        $this->dump(" save {$product->getId()} product info");
+    }
+
+    /**
+     * Get products notparsing yet on new site
+     */
+    protected function getProductsForFirstParsing()
+    {
+        $checkTime = new \DateTime('now');
+        $checkTime->modify('-' . self::PRODUCT_ACTUALITY . ' days');
+
+        $qb = $this->em->createQueryBuilder();
+        $products = $qb->select('p')
+            ->from('ProductBundle:Product', 'p')
+            ->leftJoin('ParsingBundle:ParsingProductInfo', 'pr_in')
+            ->where('pr_in.updatedAt is NULL OR pr_in.updatedAt < :checkTime')
+            ->setParameter(':checkTime', $checkTime)
+            ->getQuery()
+            ->execute();
+
+        $this->dump(' get ' . count($products) . ' products for parsing');
+
+        return $products;
     }
 }
