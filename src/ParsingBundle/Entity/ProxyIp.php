@@ -3,6 +3,7 @@
 namespace ParsingBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use phpDocumentor\Reflection\Types\Integer;
 
 /**
  * ProxyIp
@@ -48,6 +49,13 @@ class ProxyIp
      * @ORM\Column(name="last_used", type="datetime", nullable=true)
      */
     private $lastUsed;
+
+    /**
+     * @var Integer
+     *
+     * @ORM\Column(name="num_fail", type="integer", nullable=true)
+     */
+    private $numFail;
 
 
     /**
@@ -154,5 +162,21 @@ class ProxyIp
     public function getLastUsed()
     {
         return $this->lastUsed;
+    }
+
+    /**
+     * @return int
+     */
+    public function getNumFail()
+    {
+        return $this->numFail;
+    }
+
+    /**
+     * @param int $numFail
+     */
+    public function setNumFail($numFail)
+    {
+        $this->numFail = $numFail;
     }
 }

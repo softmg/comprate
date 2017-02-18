@@ -12,7 +12,11 @@ use ParsingBundle\Entity\ProxyIp;
 
 class ProxyList
 {
-    const TIME_INTERVAL = 12; //Interval before use one ip
+    /** @var array */
+    const TIME_INTERVAL = [12, 15]; //Interval before use one ip
+
+    /** @var Integer */
+    const UNACTIVE_AFTER_NUM_FAILS = 5; //After what failes unactive ip
 
     /** @var  EntityManager */
     private $em;
@@ -67,10 +71,13 @@ class ProxyList
             throw new \Exception('In database we does not have active ip');
         }
 
+        /* random interval beetwen set values */
+        $checkInterval = rand(self::TIME_INTERVAL[0], self::TIME_INTERVAL[1]);
+
         $proxyIp = $proxyIpRepo->createQueryBuilder('ip')
             ->where('ip.isActive = 1')
             ->andWhere("ip.lastUsed <= :checkDate")
-            ->setParameter('checkDate', new \DateTime("-" . self::TIME_INTERVAL . "seconds"))
+            ->setParameter('checkDate', new \DateTime("-$checkInterval seconds"))
             ->orderBy('ip.lastUsed', 'ASC')
             ->getQuery()
             ->setMaxResults(1)
@@ -79,10 +86,20 @@ class ProxyList
 
         return $proxyIp;
     }
-    
+
+    /**
+     * @param ProxyIp $proxyIp
+     */
     public function addProxyIpFail($proxyIp)
     {
-        
+        $proxyIp->setNumFail($proxyIp->getNumFail() + 1);
+
+        if ($proxyIp->getNumFail() >= self::UNACTIVE_AFTER_NUM_FAILS) {
+            $proxyIp->setIsActive(false);
+        }
+
+        $this->em->persist($proxyIp);
+        $this->em->flush();
     }
 
     /**

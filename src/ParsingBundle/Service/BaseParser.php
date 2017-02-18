@@ -14,6 +14,7 @@ use ParsingBundle\Entity\ProxyIp;
 use ParsingBundle\Repository\ParsingProductInfoRepository;
 use ParsingBundle\Repository\ParsingSiteRepository;
 use Symfony\Component\DomCrawler\Crawler;
+use \ForceUTF8\Encoding;
 
 abstract class BaseParser
 {
@@ -180,7 +181,11 @@ abstract class BaseParser
                 /*if fail try again*/
                 $this->dump(" page $pageUrl fail! Try it again");
 
-                $this->addProxyIpFail();
+                if ($this->proxyIp) {
+                    $this->proxyList->addProxyIpFail($this->proxyIp);
+                }
+
+                $this->getCrawlerPage($pageUrl);
             }
         }
 
@@ -223,8 +228,11 @@ abstract class BaseParser
         if (file_exists($this->getCacheFileName($pageUrl))) {
             $file = file_get_contents($this->getCacheFileName($pageUrl));
 
+            /* make sure we have utf-8 encoding file */
+            $file = Encoding::toUTF8($file);
             if ($file) {
-                $crawler = new Crawler($file);
+                $crawler = new Crawler();
+                $crawler->addHtmlContent($file, 'UTF-8');
                 $this->dump(" get page $pageUrl from cache");
             }
         }
