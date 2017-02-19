@@ -57,6 +57,20 @@ class ProxyIp
      */
     private $numFail;
 
+    /**
+     * @var Integer
+     *
+     * @ORM\Column(name="num_success", type="integer", nullable=true)
+     */
+    private $numSuccess;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="next_use", type="datetime", nullable=true)
+     */
+    private $nextUse;
+
 
     /**
      * Get id
@@ -178,5 +192,37 @@ class ProxyIp
     public function setNumFail($numFail)
     {
         $this->numFail = $numFail;
+    }
+
+    /**
+     * @return int
+     */
+    public function getNumSuccess()
+    {
+        return $this->numSuccess;
+    }
+
+    /**
+     * @param int $numSuccess
+     */
+    public function setNumSuccess($numSuccess)
+    {
+        $this->numSuccess = $numSuccess;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getNextUse()
+    {
+        return $this->nextUse;
+    }
+
+    /**
+     * @param \DateTime $nextUse
+     */
+    public function setNextUse($nextUse)
+    {
+        $this->nextUse = $nextUse;
     }
 }

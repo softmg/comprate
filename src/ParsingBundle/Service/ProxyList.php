@@ -54,7 +54,10 @@ class ProxyList
         $this->dump("Get white ip {$proxyIp->getIp()}");
 
         if ($updateLaunchTime) {
-            $proxyIp->setLastUsed(new \DateTime());
+            $now = new \DateTime();
+            $proxyIp->setLastUsed($now);
+            $proxyIp->setNextUse($now);
+            $proxyIp = $this->updateNextUse($proxyIp);
             $this->em->persist($proxyIp);
             $this->em->flush();
         }
@@ -71,13 +74,10 @@ class ProxyList
             throw new \Exception('In database we does not have active ip');
         }
 
-        /* random interval beetwen set values */
-        $checkInterval = rand(self::TIME_INTERVAL[0], self::TIME_INTERVAL[1]);
-
         $proxyIp = $proxyIpRepo->createQueryBuilder('ip')
             ->where('ip.isActive = 1')
-            ->andWhere("ip.lastUsed <= :checkDate")
-            ->setParameter('checkDate', new \DateTime("-$checkInterval seconds"))
+            ->andWhere("ip.nextUse is NULL OR ip.nextUse <= :checkDate")
+            ->setParameter('checkDate', new \DateTime())
             ->orderBy('ip.lastUsed', 'ASC')
             ->getQuery()
             ->setMaxResults(1)
@@ -95,11 +95,48 @@ class ProxyList
         $proxyIp->setNumFail($proxyIp->getNumFail() + 1);
 
         if ($proxyIp->getNumFail() >= self::UNACTIVE_AFTER_NUM_FAILS) {
-            $proxyIp->setIsActive(false);
+            /* not unactive, just use not soon*/
+            //$proxyIp->setIsActive(false);
         }
+
+        $proxyIp = $this->updateNextUse($proxyIp);
 
         $this->em->persist($proxyIp);
         $this->em->flush();
+    }
+
+    /**
+     * @param ProxyIp $proxyIp
+     */
+    public function addProxyIpSuccess($proxyIp)
+    {
+        $proxyIp->setNumFail($proxyIp->getNumSuccess() + 1);
+
+        /* and reduce num fail */
+        if ($proxyIp->getNumFail() > 0) {
+            $proxyIp->setNumFail($proxyIp->getNumFail() - 1);
+        }
+
+        $proxyIp = $this->updateNextUse($proxyIp);
+
+        $this->em->persist($proxyIp);
+        $this->em->flush();
+    }
+
+    /**
+     * @param ProxyIp $proxyIp
+     * @return ProxyIp
+     */
+    private function updateNextUse($proxyIp)
+    {
+        $lastUsed = $proxyIp->getLastUsed();
+        /* random interval beetwen set values */
+        $checkInterval = rand(self::TIME_INTERVAL[0], self::TIME_INTERVAL[1]);
+
+        $checkInterval = $checkInterval + $proxyIp->getNumFail() * $checkInterval;
+        $lastUsed->modify("+$checkInterval seconds");
+
+        return $proxyIp;
     }
 
     /**

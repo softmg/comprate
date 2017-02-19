@@ -27,7 +27,8 @@ class YandexMarketParser extends BaseParser
         foreach ($products as $product) {
             $this->getProductAttributes($product);
         }
-        var_dump($products); exit;
+        exit;
+        //var_dump($products); exit;
 
         //$client = $this->getClient();
         //$crawler = $client->request('GET', 'http://test1.softmg.ru/testip.php');
@@ -39,16 +40,42 @@ class YandexMarketParser extends BaseParser
 
     /**
      * @param Product $product
+     * @throws \Exception
      */
     public function getProductAttributes($product)
     {
-        $productUrl = $this->getProductUrl($product->getName());
-        $this->saveProductInfo($product, $productUrl);
-        //$domLink = new Link($link, sprintf(self::SEARCH_URL, $product->getName()));
-        $link = $this->getCrawler()->selectLink($productUrl)->link();
-        $crawler = $this->getGoutteClient()->click($link);
+        $productId = $this->getProductId($product->getName());
+        //$this->saveProductInfo($product, $productUrl);
+        //$domLink = new Link($productLink, sprintf(self::SEARCH_URL, $product->getName()));
+        //$link = $this->getCrawler()->selectLink($productUrl)->link();
+        //var_dump($productUrl, $this->getCrawler()->selectLink($productUrl)); exit;
+        //$crawler = $this->getGoutteClient()->click($domLink);
+        
+        if ($productId) {
+            $urlForRequest = sprintf(self::PRODUCT_URL, $productId);
+            $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
-        var_dump($crawler); exit;
+            $attributes = $crawlerPage->filter('.product-spec__name-inner')->each(function ($node) {
+                $text = $node->text();
+                $attribute = strpos($text, '?') ? substr($node->text(), 0, strpos($text, '?')) : $text;
+                return trim($attribute);
+            });
+            $attributesValues =  $crawlerPage->filter('.product-spec__value-inner')->each(function ($node) {
+                $text = $node->text();
+                return trim($text);
+            });
+
+            if (count($attributes)) {
+                if (count($attributes) !== count($attributesValues)) {
+                    throw new \Exception('count attributes and attributes names different!');
+                }
+                foreach ($attributes as $num => $attributeName) {
+                    $this->addAttributeToProduct($product, $attributeName, $attributesValues[$num]);
+                }
+            } else {
+                $this->dump(" Does not get attributes from page $urlForRequest");
+            }
+        }
     }
 
     /**
@@ -96,19 +123,23 @@ class YandexMarketParser extends BaseParser
     * @throws \Exception
     * @return String
     */
-    private function getProductUrl($productName)
+    private function getProductId($productName)
     {
+        $productId = false;
+
         $urlForRequest = sprintf(self::SEARCH_URL, $productName);
 
         $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
-        if (!$crawlerPage) {
-            throw new \Exception("Error to get crawler page from url \"{$urlForRequest}\"");
+        $header_link = $crawlerPage->filter('.snippet-card__header-link');
+        $yandexProductUrl = $header_link->getNode(0)->getAttribute('href');
+        $yandexParseUrl = parse_url($yandexProductUrl);
+        if ($yandexParseUrl && isset($yandexParseUrl['path'])) {
+            $productId = preg_replace('/[^\d]/s', '', $yandexParseUrl['path']);
+        } else {
+            $this->dump(" ERROR: can not get product url for product name '$productName' and url '$yandexProductUrl'");
         }
 
-        $header_link = $crawlerPage->filter('.snippet-card__header-link');
-        $yandexProductLink = $header_link->getNode(0);
-
-        return $yandexProductLink->getAttribute('href');
+        return $productId;
     }
 }

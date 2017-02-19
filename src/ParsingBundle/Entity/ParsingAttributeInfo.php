@@ -28,7 +28,7 @@ class ParsingAttributeInfo
      * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Attribute")
      * @ORM\JoinColumn(name="attribute_id", referencedColumnName="id")
      */
-    private $attributeId;
+    private $attribute;
 
 
     /**
@@ -37,7 +37,7 @@ class ParsingAttributeInfo
      * @ORM\ManyToOne(targetEntity="ParsingSite")
      * @ORM\JoinColumn(name="parsing_site_id", referencedColumnName="id")
      */
-    private $parsingSiteId;
+    private $site;
 
     /**
      * @var string
@@ -57,51 +57,51 @@ class ParsingAttributeInfo
     }
 
     /**
-     * Set attributeId
+     * Set attribute
      *
-     * @param integer $attributeId
+     * @param Attribute $attribute
      *
      * @return ParsingAttributeInfo
      */
-    public function setAttributeId($attributeId)
+    public function setAttribute($attribute)
     {
-        $this->attributeId = $attributeId;
+        $this->attribute = $attribute;
 
         return $this;
     }
 
     /**
-     * Get attributeId
+     * Get attribute
      *
-     * @return int
+     * @return Attribute
      */
-    public function getAttributeId()
+    public function getAttribute()
     {
-        return $this->attributeId;
+        return $this->attribute;
     }
 
     /**
-     * Set parsingSiteId
+     * Set site
      *
-     * @param integer $parsingSiteId
+     * @param ParsingSite $site
      *
      * @return ParsingAttributeInfo
      */
-    public function setParsingSiteId($parsingSiteId)
+    public function setSite($site)
     {
-        $this->parsingSiteId = $parsingSiteId;
+        $this->site = $site;
 
         return $this;
     }
 
     /**
-     * Get parsingSiteId
+     * Get site
      *
-     * @return int
+     * @return ParsingSite
      */
-    public function getParsingSiteId()
+    public function getSite()
     {
-        return $this->parsingSiteId;
+        return $this->site;
     }
 
     /**

@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * Attribute
  *
- * @ORM\Table(name="atrribute")
+ * @ORM\Table(name="attribute")
  * @ORM\Entity(repositoryClass="ProductBundle\Repository\AttributeRepository")
  */
 class Attribute
@@ -50,6 +50,13 @@ class Attribute
      * @ORM\Column(name="max_value", type="integer", nullable=true)
      */
     private $maxValue;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="unit", type="string", length=20, nullable=true)
+     */
+    private $unit;
 
     /**
      * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="attribute")
@@ -254,6 +261,22 @@ class Attribute
     public function setMaxValue($maxValue)
     {
         $this->maxValue = $maxValue;
+    }
+
+    /**
+     * @return String
+     */
+    public function getUnit()
+    {
+        return $this->unit;
+    }
+
+    /**
+     * @param String $unit
+     */
+    public function setUnit($unit)
+    {
+        $this->unit = $unit;
     }
 
     public function __toString()

@@ -9,18 +9,27 @@ namespace ParsingBundle\Service;
 
 use Doctrine\ORM\EntityManager;
 use Goutte\Client;
+use ParsingBundle\Entity\ParsingAttributeInfo;
 use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
 use ParsingBundle\Entity\ProxyIp;
 use ParsingBundle\Repository\ParsingProductInfoRepository;
 use ParsingBundle\Repository\ParsingSiteRepository;
+use ProductBundle\Entity\Attribute;
 use ProductBundle\Entity\Product;
+use ProductBundle\Entity\ProductAttribute;
 use Symfony\Component\DomCrawler\Crawler;
 use \ForceUTF8\Encoding;
+use Doctrine\ORM\Query\Expr;
 
 abstract class BaseParser
 {
     const PRODUCT_ACTUALITY = 10;
+    const SLEEP_BEFORE_SECOND_REQUEST = [3, 5];
+    protected static $attributeValueReplacements = [
+        'есть' => true,
+        'нет' => false
+    ];
 
     /** @var  EntityManager */
     private $em;
@@ -168,13 +177,20 @@ abstract class BaseParser
 
     /**
      * @param String $pageUrl
+     * @param Bool $forceNew
+     * @throws \Exception
      * @return Crawler
      */
-    public function getCrawlerPage($pageUrl)
+    public function getCrawlerPage($pageUrl, $forceNew = false)
     {
-        $client = $this->getClient();
-
         if (! $crawler = $this->getCacheCrawler($pageUrl)) {
+            /* if second request after first success => use old client and sleep before next */
+            if (!$forceNew && $client = $this->getGoutteClient()) {
+                $this->sleepBeforeRequest();
+            } else {
+                $client = $this->getClient();
+            }
+
             $crawler = $client->request('GET', $pageUrl);
             /* check, enter captcha if exist and return new crawler or null if fail enter captcha */
             $crawler = $this->checkAndEnterCaptcha($crawler);
@@ -192,13 +208,32 @@ abstract class BaseParser
                     $this->proxyList->addProxyIpFail($this->proxyIp);
                 }
 
-                $this->getCrawlerPage($pageUrl);
+                $this->getCrawlerPage($pageUrl, true);
             }
+        }
+
+        if (!$crawler) {
+            throw new \Exception("Error to get crawler page from url \"{$pageUrl}\"");
         }
 
         $this->crawler = $crawler;
 
         return  $crawler;
+    }
+
+    /**
+     * sleep before next request
+     */
+    protected function sleepBeforeRequest()
+    {
+        $sleepSeconds = rand(self::SLEEP_BEFORE_SECOND_REQUEST[0], self::SLEEP_BEFORE_SECOND_REQUEST[1]);
+        $this->dump(" wait {$sleepSeconds}s before next request", '');
+        while ($sleepSeconds > 0) {
+            sleep(1);
+            $this->dump('.', '');
+            $sleepSeconds--;
+        }
+        $this->dump('');
     }
 
     /**
@@ -216,11 +251,12 @@ abstract class BaseParser
 
     /**
      * @param String $message
+     * @param String $newLine
      */
-    protected function dump($message)
+    protected function dump($message, $newLine = "\r\n")
     {
         if ($this->debug) {
-            echo "$message\r\n";
+            echo "{$message}{$newLine}";
         }
     }
 
@@ -326,16 +362,20 @@ abstract class BaseParser
      */
     protected function saveProductInfo($product, $productUrl)
     {
-        //TODO: find to update
-        $productInfo = new ParsingProductInfo();
-        $productInfo->setUrl($productUrl);
-        $productInfo->setProduct($product);
-        $productInfo->setSite($this->getParserSite());
+        $productInfoRepo = $this->em->getRepository('ParsingBundle:ParsingProductInfo');
+        $productInfo = $productInfoRepo->findOneBy(['product' => $product, 'site' => $this->getParserSite()]);
+
+        if (!$productInfo) {
+            $productInfo = new ParsingProductInfo();
+            $productInfo->setUrl($productUrl);
+            $productInfo->setProduct($product);
+            $productInfo->setSite($this->getParserSite());
+        }
 
         $this->em->persist($productInfo);
         $this->em->flush();
 
-        $this->dump(" save {$product->getId()} product info");
+        $this->dump(" save product info for id: {$product->getId()}");
     }
 
     /**
@@ -349,14 +389,134 @@ abstract class BaseParser
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('p')
             ->from('ProductBundle:Product', 'p')
-            ->leftJoin('ParsingBundle:ParsingProductInfo', 'pr_in')
+            ->leftJoin('ParsingBundle:ParsingProductInfo', 'pr_in', Expr\Join::WITH, 'pr_in.product=p')
             ->where('pr_in.updatedAt is NULL OR pr_in.updatedAt < :checkTime')
             ->setParameter(':checkTime', $checkTime)
             ->getQuery()
-            ->execute();
+            ->execute()
+            ;
 
         $this->dump(' get ' . count($products) . ' products for parsing');
 
         return $products;
+    }
+
+    /**
+     * @param String $name
+     * @return ParsingAttributeInfo
+     */
+    protected function addAttributeInfo($name)
+    {
+        $attributeInfoRepo = $this->em->getRepository('ParsingBundle:ParsingAttributeInfo');
+
+        $attributeInfo = $attributeInfoRepo->findOneBy([
+            'name' => $name,
+            'site' => $this->getParserSite()
+        ]);
+
+        if (!$attributeInfo) {
+            $attributeInfo = new ParsingAttributeInfo();
+            
+            $attributeInfo->setName($name);
+            $attributeInfo->setSite($this->getParserSite());
+
+            $this->em->persist($attributeInfo);
+            $this->em->flush();
+
+            $this->dump(" add new attribute info name '$name'");
+        }
+
+        return $attributeInfo;
+    }
+
+    /**
+     * @param Product $product
+     * @param String $name
+     * @param String $value
+     * @param Boolean $forceUpdate
+     * @return Boolean
+     */
+    protected function addAttributeToProduct($product, $name, $value, $forceUpdate = false)
+    {
+        $result = true;
+        $attributeInfo = $this->addAttributeInfo($name);
+
+        if ($attribute = $attributeInfo->getAttribute()) {
+            $productAttributeRepo = $this->em->getRepository('ProductBundle:ProductAttribute');
+            $productAttribute = $productAttributeRepo->findOneBy([
+                'product' => $product,
+                'attribute' => $attribute
+            ]);
+
+            if (!$productAttribute || $forceUpdate) {
+                if (!$productAttribute) {
+                    $productAttribute = new ProductAttribute();
+                    $productAttribute->setProduct($product);
+                    $productAttribute->setAttribute($attribute);
+                }
+
+                $productAttribute->setValue($value);
+                if ($forceUpdate) {
+                    $this->dump(" update product (id:{$product->getId()}) attribute '$name' value: '$value'");
+                } else {
+                    $this->dump(" add product (id:{$product->getId()}) attribute '$name' value: '$value'");
+                }
+
+                $this->em->persist($productAttribute);
+                $this->em->flush();
+            }
+        } else {
+            $this->dump(" we need to set attribute to attribute info '$name'");
+            $result = false;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Format parsed attribute value
+     * @param ProductAttribute $productAttribute
+     * @return ProductAttribute
+     */
+    protected function formatProductAttributeValue($productAttribute)
+    {
+        $value = $productAttribute->getValue();
+
+        if (in_array($value, array_keys(self::$attributeValueReplacements))) {
+            $value = self::$attributeValueReplacements[$value];
+        }
+
+        $attribute = $productAttribute->getAttribute();
+        if ($attribute->getUnit()) {
+            $value = trim(str_replace($attribute->getUnit(), '', $value));
+        }
+
+        $this->checkAttributeValueFromExists($attribute, $value);
+
+        $productAttribute->setValue($value);
+
+        return $productAttribute;
+    }
+
+    /**
+     * Check if new vaule does not exist in vocabular for this attribute
+     * @param Attribute $attribute
+     * @param String $value
+     * @throws \Exception
+     */
+    protected function checkAttributeValueFromExists($attribute, $value)
+    {
+        $attibuteValues = $attribute->getValues();
+        if ($attibuteValues->count()) {
+            $attributeValueRepo = $this->em->getRepository('ParsingBundle:ParsingAttributeInfo');
+            $attributeValue = $attributeValueRepo->findOneBy([
+                'attribute' => $attribute,
+                'value' => $value
+            ]);
+
+            if (!$attributeValue) {
+                throw new \Exception("Not found attribute value for \"{$attribute->getName()}\" value: \"$value\"");
+            }
+        }
     }
 }
