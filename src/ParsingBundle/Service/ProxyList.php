@@ -97,6 +97,7 @@ class ProxyList
         if ($proxyIp->getNumFail() >= self::UNACTIVE_AFTER_NUM_FAILS) {
             /* not unactive, just use not soon*/
             //$proxyIp->setIsActive(false);
+            //var_dump(1);
         }
 
         $proxyIp = $this->updateNextUse($proxyIp);
@@ -110,7 +111,7 @@ class ProxyList
      */
     public function addProxyIpSuccess($proxyIp)
     {
-        $proxyIp->setNumFail($proxyIp->getNumSuccess() + 1);
+        $proxyIp->setNumSuccess($proxyIp->getNumSuccess() + 1);
 
         /* and reduce num fail */
         if ($proxyIp->getNumFail() > 0) {

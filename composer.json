@@ -36,7 +36,7 @@
         "friendsofsymfony/rest-bundle": "^1.7",
         "jms/serializer-bundle": "^1.0",
         "csa/guzzle-bundle": "^2.0",
-        "fabpot/goutte": "^3.2",
+        "fabpot/goutte": "3.2.1",
         "gladyshev/rucaptcha-client": "~1.0",
         "neitanod/forceutf8": "dev-master"
     },

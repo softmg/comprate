@@ -10,7 +10,6 @@ namespace ParsingBundle\Service;
 use ParsingBundle\Entity\ParsingSite;
 use ProductBundle\Entity\Product;
 use Symfony\Component\DomCrawler\Crawler;
-use Symfony\Component\DomCrawler\Link;
 
 class YandexMarketParser extends BaseParser
 {
@@ -22,6 +21,16 @@ class YandexMarketParser extends BaseParser
      */
     public function run()
     {
+        //$crawler = $this->getCacheCrawler('captcha');
+        //$captchaImg = $crawler->filter('.form__captcha')->getNode(0)->getAttribute('src');
+        //var_dump($captchaImg); exit;
+        //$crawlerPage = $this->getCrawlerPage('http://test1.softmg.ru/testip.php', true, true);
+        //var_dump($this->getGoutteClient()->getResponse()->getContent()); exit;
+        //$rucaptcha = new \Rucaptcha\Client($this->getRucaptchaToken());
+        //$captchaText = false;
+        //$captchaText = $rucaptcha->recognizeFile('https://na.captcha.yandex.net/image?key=c1FSkolaNoVoM59xayyxfFXaJmQb6cUo');
+        //var_dump($captchaText);
+//exit;
         $products = $this->getProductsForFirstParsing();
 
         foreach ($products as $product) {
@@ -38,44 +47,67 @@ class YandexMarketParser extends BaseParser
         exit;
     }
 
+    protected function getCharacteristicUrl($productUrl, $productId)
+    {
+        $urlForRequest = false;
+
+        if ($this->isFromCache() && $productUrl) {
+            $urlForRequest = $this->getParserSite()->getUrl() . $productUrl;
+            $crawlerPage = $this->getCrawlerPage($urlForRequest);
+
+            $charactersiticLink = $crawlerPage->selectLink('Характеристики');
+            if ($charactersiticLink->count()) {
+                $urlForRequest = $charactersiticLink->getNode(0)->getAttribute('href');
+            } else {
+                $this->dump(" Can not get charachteristics link $urlForRequest");
+            }
+        }
+
+        if (!$this->isFromCache()) {
+            $urlForRequest = sprintf(self::PRODUCT_URL, $productId);
+        }
+
+        return $urlForRequest;
+    }
+
     /**
      * @param Product $product
      * @throws \Exception
      */
     public function getProductAttributes($product)
     {
-        $productId = $this->getProductId($product->getName());
-        //$this->saveProductInfo($product, $productUrl);
-        //$domLink = new Link($productLink, sprintf(self::SEARCH_URL, $product->getName()));
-        //$link = $this->getCrawler()->selectLink($productUrl)->link();
-        //var_dump($productUrl, $this->getCrawler()->selectLink($productUrl)); exit;
-        //$crawler = $this->getGoutteClient()->click($domLink);
-        
-        if ($productId) {
-            $urlForRequest = sprintf(self::PRODUCT_URL, $productId);
-            $crawlerPage = $this->getCrawlerPage($urlForRequest);
+        list($productUrl, $productId) = $this->getProductUrlAndId($product->getName());
 
-            $attributes = $crawlerPage->filter('.product-spec__name-inner')->each(function ($node) {
-                $text = $node->text();
-                $attribute = strpos($text, '?') ? substr($node->text(), 0, strpos($text, '?')) : $text;
-                return trim($attribute);
-            });
-            $attributesValues =  $crawlerPage->filter('.product-spec__value-inner')->each(function ($node) {
-                $text = $node->text();
-                return trim($text);
-            });
-
-            if (count($attributes)) {
-                if (count($attributes) !== count($attributesValues)) {
-                    throw new \Exception('count attributes and attributes names different!');
-                }
-                foreach ($attributes as $num => $attributeName) {
-                    $this->addAttributeToProduct($product, $attributeName, $attributesValues[$num]);
-                }
-            } else {
-                $this->dump(" Does not get attributes from page $urlForRequest");
-            }
+        if (strpos($productUrl, 'redir') !== false) {
+            return;
         }
+
+        $urlForRequest = $this->getCharacteristicUrl($productUrl, $productId);
+
+        $crawlerPage = $this->getCrawlerPage($urlForRequest);
+
+        $attributes = $crawlerPage->filter('.product-spec__name-inner')->each(function ($node) {
+            $text = $node->text();
+            $attribute = strpos($text, '?') ? substr($node->text(), 0, strpos($text, '?')) : $text;
+            return trim($attribute);
+        });
+        $attributesValues =  $crawlerPage->filter('.product-spec__value-inner')->each(function ($node) {
+            $text = $node->text();
+            return trim($text);
+        });
+
+        if (count($attributes)) {
+            if (count($attributes) !== count($attributesValues)) {
+                throw new \Exception('count attributes and attributes names different!');
+            }
+            foreach ($attributes as $num => $attributeName) {
+                $this->addAttributeToProduct($product, $attributeName, $attributesValues[$num]);
+            }
+        } else {
+            $this->dump(" Does not get attributes from page $urlForRequest");
+        }
+
+        $this->saveProductInfo($product, $this->getParserSite()->getUrl() . $productUrl);
     }
 
     /**
@@ -92,20 +124,24 @@ class YandexMarketParser extends BaseParser
      */
     public function recognizeAndEnterCaptcha($crawler)
     {
-        $captchaCrawler = $crawler->filter('.captcha');
-        if ($captchaCrawler) {
+        $captchaCrawler = $crawler->filter('.form__captcha');
+        if ($captchaCrawler->count()) {
             $this->dump(" CAPTCHA! Try to recognize captcha");
 
-            $rucaptcha = new \Rucaptcha\Client($this->getRucaptchaToken());
+            $this->saveCacheContent('captcha', $this->getGoutteClient()->getResponse()->getContent());
             $captchaText = false;
-            //$captchaText = $rucaptcha->recognizeFile('https://i.captcha.yandex.net/image?key=10ixnGFOj1QCQ9ZxeMOnn9p4e3KekF40');
+            if ($this->getRucaptchaToken()) {
+                $rucaptcha = new \Rucaptcha\Client($this->getRucaptchaToken());
+                $captchaImg = $captchaCrawler->getNode(0)->getAttribute('src');
+                $captchaText = $rucaptcha->recognizeFile($captchaImg);
+            }
 
             if ($captchaText) {
                 $this->dump(" recognize captcha and try again");
 
-                $form = $crawler->selectButton('sign in')->form();
+                $form = $crawler->filter('form')->form();
                 $crawler = $this->getGoutteClient()->submit($form, array(
-                    'captcha' => $captchaText
+                    'rep' => $captchaText
                 ));
             } else {
                 /* set crawler to null if not success captcha */
@@ -123,23 +159,28 @@ class YandexMarketParser extends BaseParser
     * @throws \Exception
     * @return String
     */
-    private function getProductId($productName)
+    private function getProductUrlAndId($productName)
     {
         $productId = false;
 
         $urlForRequest = sprintf(self::SEARCH_URL, $productName);
 
-        $crawlerPage = $this->getCrawlerPage($urlForRequest);
+        /* product list with new client */
+        $crawlerPage = $this->getCrawlerPage($urlForRequest, true);
 
         $header_link = $crawlerPage->filter('.snippet-card__header-link');
         $yandexProductUrl = $header_link->getNode(0)->getAttribute('href');
-        $yandexParseUrl = parse_url($yandexProductUrl);
-        if ($yandexParseUrl && isset($yandexParseUrl['path'])) {
-            $productId = preg_replace('/[^\d]/s', '', $yandexParseUrl['path']);
+        if (strpos($yandexProductUrl, 'redir') === false) {
+            $yandexParseUrl = parse_url($yandexProductUrl);
+            if ($yandexParseUrl && isset($yandexParseUrl['path'])) {
+                $productId = preg_replace('/[^\d]/s', '', $yandexParseUrl['path']);
+            } else {
+                $this->dump(" ERROR: can not get product url for product name '$productName' and url '$yandexProductUrl'");
+            }
         } else {
-            $this->dump(" ERROR: can not get product url for product name '$productName' and url '$yandexProductUrl'");
+            $this->dump(" ERROR: detected redirect url for product '$productName' and url '$yandexProductUrl'");
         }
 
-        return $productId;
+        return [$yandexProductUrl, $productId];
     }
 }

@@ -9,6 +9,7 @@ namespace ParsingBundle\Service;
 
 use Doctrine\ORM\EntityManager;
 use Goutte\Client;
+use GuzzleHttp\Cookie\FileCookieJar;
 use ParsingBundle\Entity\ParsingAttributeInfo;
 use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
@@ -60,6 +61,12 @@ abstract class BaseParser
 
     /** @var bool */
     private $debug = false;
+
+    /** @var bool */
+    private $fromCache = false;
+
+    // Will hold path to a writable location/file
+    protected $cookieFilePath;
 
     /**
      * @param \Doctrine\ORM\EntityManager $em
@@ -150,6 +157,13 @@ abstract class BaseParser
         $goutteClient = new Client();
         $userAgent = false;
 
+        /* settings to save cookie */
+        $this->clientParameters['curl'][CURLOPT_COOKIEFILE] = $this->cache_dir . 'cookie.data';
+        $this->clientParameters['curl'][CURLOPT_COOKIEFILE] = $this->cache_dir . 'cookie.data';
+        $this->clientParameters['curl'][CURLOPT_RETURNTRANSFER] = 1;
+        $cookieJar = new FileCookieJar($this->cache_dir . 'cookie.data', true);
+        $this->clientParameters['cookies'] = $cookieJar;
+
         /* check use proxy ip */
         if ($this->getParserSite()->isUseProxy()) { // && !isset($this->clientParameters['proxy'])
             $proxyIp = $this->proxyList->getWhiteIp(true);
@@ -160,7 +174,7 @@ abstract class BaseParser
 
             /* check if port for auth */
             if (strpos($proxyIp->getIp(), '8080') && $this->proxy_userpasswd) {
-                $clientParameters['curl'][CURLOPT_PROXYUSERPWD] = $this->proxy_userpasswd;
+                $this->clientParameters['curl'][CURLOPT_PROXYUSERPWD] = $this->proxy_userpasswd;
             }
 
             $userAgent = $proxyIp->getUserAgent();
@@ -168,6 +182,7 @@ abstract class BaseParser
 
         $guzzleClient = new \GuzzleHttp\Client($this->clientParameters);
         $goutteClient->setClient($guzzleClient);
+        $goutteClient->setGuzzleCookieJar($cookieJar);
         $goutteClient->setHeader('User-Agent', $userAgent);
 
         $this->goutteClient = $goutteClient;
@@ -178,12 +193,16 @@ abstract class BaseParser
     /**
      * @param String $pageUrl
      * @param Bool $forceNew
+     * @param Bool $notUseCache
      * @throws \Exception
      * @return Crawler
      */
-    public function getCrawlerPage($pageUrl, $forceNew = false)
+    public function getCrawlerPage($pageUrl, $forceNew = false, $notUseCache = false)
     {
-        if (! $crawler = $this->getCacheCrawler($pageUrl)) {
+        $this->fromCache = false;
+        if ($notUseCache || ! $crawler = $this->getCacheCrawler($pageUrl)) {
+            $this->fromCache = true;
+
             /* if second request after first success => use old client and sleep before next */
             if (!$forceNew && $client = $this->getGoutteClient()) {
                 $this->sleepBeforeRequest();
@@ -195,10 +214,11 @@ abstract class BaseParser
             /* check, enter captcha if exist and return new crawler or null if fail enter captcha */
             $crawler = $this->checkAndEnterCaptcha($crawler);
             $response = $client->getResponse();
-            
+
             /* if success response => save content to cache */
             if ($crawler && $this->checkSuccessResponse($response)) {
                 $this->dump(" page $pageUrl success! Save it to cache");
+                $this->proxyList->addProxyIpSuccess($this->proxyIp);
                 $this->saveCacheContent($pageUrl, $response->getContent());
             } else {
                 /*if fail try again*/
@@ -208,7 +228,7 @@ abstract class BaseParser
                     $this->proxyList->addProxyIpFail($this->proxyIp);
                 }
 
-                $this->getCrawlerPage($pageUrl, true);
+                $crawler = $this->getCrawlerPage($pageUrl, true);
             }
         }
 
@@ -242,9 +262,7 @@ abstract class BaseParser
      */
     private function checkAndEnterCaptcha($crawler)
     {
-        if ($this->getRucaptchaToken()) {
-            $crawler = $this->recognizeAndEnterCaptcha($crawler);
-        }
+        $crawler = $this->recognizeAndEnterCaptcha($crawler);
 
         return $crawler;
     }
@@ -264,7 +282,7 @@ abstract class BaseParser
      * @param String
      * @return Crawler $crawler
      */
-    private function getCacheCrawler($pageUrl)
+    protected function getCacheCrawler($pageUrl)
     {
         $crawler = null;
 
@@ -278,10 +296,10 @@ abstract class BaseParser
             if ($file) {
                 $crawler = new Crawler();
                 $crawler->addHtmlContent($file, 'UTF-8');
-                $this->dump(" get page $pageUrl from cache");
+                $this->dump(" get page $pageUrl from cache {$this->getCacheFileName($pageUrl)}");
             }
         }
-        
+
         return $crawler;
     }
 
@@ -416,7 +434,7 @@ abstract class BaseParser
 
         if (!$attributeInfo) {
             $attributeInfo = new ParsingAttributeInfo();
-            
+
             $attributeInfo->setName($name);
             $attributeInfo->setSite($this->getParserSite());
 
@@ -456,6 +474,8 @@ abstract class BaseParser
                 }
 
                 $productAttribute->setValue($value);
+                /* format product attribute value */
+                $productAttribute = $this->formatProductAttributeValue($productAttribute);
                 if ($forceUpdate) {
                     $this->dump(" update product (id:{$product->getId()}) attribute '$name' value: '$value'");
                 } else {
@@ -508,7 +528,7 @@ abstract class BaseParser
     {
         $attibuteValues = $attribute->getValues();
         if ($attibuteValues->count()) {
-            $attributeValueRepo = $this->em->getRepository('ParsingBundle:ParsingAttributeInfo');
+            $attributeValueRepo = $this->em->getRepository('ProductBundle:AttributeValue');
             $attributeValue = $attributeValueRepo->findOneBy([
                 'attribute' => $attribute,
                 'value' => $value
@@ -518,5 +538,10 @@ abstract class BaseParser
                 throw new \Exception("Not found attribute value for \"{$attribute->getName()}\" value: \"$value\"");
             }
         }
+    }
+
+    protected function isFromCache()
+    {
+        return $this->fromCache;
     }
 }
