@@ -65,6 +65,13 @@ class ProxyIp
     private $numSuccess;
 
     /**
+     * @var Integer
+     *
+     * @ORM\Column(name="num_captcha", type="integer", nullable=true)
+     */
+    private $numCaptcha;
+
+    /**
      * @var \DateTime
      *
      * @ORM\Column(name="next_use", type="datetime", nullable=true)
@@ -224,5 +231,21 @@ class ProxyIp
     public function setNextUse($nextUse)
     {
         $this->nextUse = $nextUse;
+    }
+
+    /**
+     * @return int
+     */
+    public function getNumCaptcha()
+    {
+        return $this->numCaptcha;
+    }
+
+    /**
+     * @param int $numCaptcha
+     */
+    public function setNumCaptcha($numCaptcha)
+    {
+        $this->numCaptcha = $numCaptcha;
     }
 }

@@ -36,21 +36,13 @@ class YandexMarketParser extends BaseParser
         foreach ($products as $product) {
             $this->getProductAttributes($product);
         }
-        exit;
-        //var_dump($products); exit;
-
-        //$client = $this->getClient();
-        //$crawler = $client->request('GET', 'http://test1.softmg.ru/testip.php');
-        $this->getProductUrl('Intel Xeon E3-1290 V2 @ 3.70GHz');
-        //$crawlerPage = $this->getCrawlerPage('http://test1.softmg.ru/testip.php');
-        var_dump(1);
-        exit;
     }
 
     protected function getCharacteristicUrl($productUrl, $productId)
     {
         $urlForRequest = false;
 
+        /* three page chain like human */
         if ($this->isFromCache() && $productUrl) {
             $urlForRequest = $this->getParserSite()->getUrl() . $productUrl;
             $crawlerPage = $this->getCrawlerPage($urlForRequest);
@@ -78,7 +70,10 @@ class YandexMarketParser extends BaseParser
     {
         list($productUrl, $productId) = $this->getProductUrlAndId($product->getName());
 
-        if (strpos($productUrl, 'redir') !== false) {
+        if (strpos($productUrl, 'redir') !== false || !$productUrl) {
+            /* save failed results too */
+            $this->saveProductInfo($product, $this->getParserSite()->getUrl() . $productUrl, true);
+
             return;
         }
 
@@ -127,6 +122,8 @@ class YandexMarketParser extends BaseParser
         $captchaCrawler = $crawler->filter('.form__captcha');
         if ($captchaCrawler->count()) {
             $this->dump(" CAPTCHA! Try to recognize captcha");
+            
+            $this->addProxyIpCaptcha();
 
             $this->saveCacheContent('captcha', $this->getGoutteClient()->getResponse()->getContent());
             $captchaText = false;
@@ -143,6 +140,8 @@ class YandexMarketParser extends BaseParser
                 $crawler = $this->getGoutteClient()->submit($form, array(
                     'rep' => $captchaText
                 ));
+
+                $crawler = $this->recognizeAndEnterCaptcha($crawler);
             } else {
                 /* set crawler to null if not success captcha */
                 $crawler = null;
@@ -162,23 +161,41 @@ class YandexMarketParser extends BaseParser
     private function getProductUrlAndId($productName)
     {
         $productId = false;
+        $yandexProductUrl = false;
 
         $urlForRequest = sprintf(self::SEARCH_URL, $productName);
 
+        /* get new client and proxy ip */
+        $this->getClient();
+
+        if (!$this->hasCookie('yandex_gid')) {
+            $this->getCrawlerPage('https://yandex.ru/', false, true);
+            $this->dump(" go to yandex to set cookie for ip: {$this->getProxyIp()->getIp()}");
+        }
+
+        if (!$this->isFileExistInCache($urlForRequest)) {
+            /* in first go to main site page */
+            $this->getCrawlerPage($this->getParserSite()->getUrl(), false, true);
+        }
+
         /* product list with new client */
-        $crawlerPage = $this->getCrawlerPage($urlForRequest, true);
+        $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
         $header_link = $crawlerPage->filter('.snippet-card__header-link');
-        $yandexProductUrl = $header_link->getNode(0)->getAttribute('href');
-        if (strpos($yandexProductUrl, 'redir') === false) {
-            $yandexParseUrl = parse_url($yandexProductUrl);
-            if ($yandexParseUrl && isset($yandexParseUrl['path'])) {
-                $productId = preg_replace('/[^\d]/s', '', $yandexParseUrl['path']);
+        if ($header_link->count()) {
+            $yandexProductUrl = $header_link->getNode(0)->getAttribute('href');
+            if (strpos($yandexProductUrl, 'redir') === false) {
+                $yandexParseUrl = parse_url($yandexProductUrl);
+                if ($yandexParseUrl && isset($yandexParseUrl['path'])) {
+                    $productId = preg_replace('/[^\d]/s', '', $yandexParseUrl['path']);
+                } else {
+                    $this->dump(" ERROR: can not get product url for product name '$productName' and url '$yandexProductUrl'");
+                }
             } else {
-                $this->dump(" ERROR: can not get product url for product name '$productName' and url '$yandexProductUrl'");
+                $this->dump(" ERROR: detected redirect url for product '$productName' and url '$yandexProductUrl'");
             }
         } else {
-            $this->dump(" ERROR: detected redirect url for product '$productName' and url '$yandexProductUrl'");
+            $this->dump(" ERROR: not found product '$productName' on url '$urlForRequest'");
         }
 
         return [$yandexProductUrl, $productId];

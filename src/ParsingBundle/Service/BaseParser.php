@@ -16,6 +16,7 @@ use ParsingBundle\Entity\ParsingSite;
 use ParsingBundle\Entity\ProxyIp;
 use ParsingBundle\Repository\ParsingProductInfoRepository;
 use ParsingBundle\Repository\ParsingSiteRepository;
+use phpDocumentor\Reflection\Types\Boolean;
 use ProductBundle\Entity\Attribute;
 use ProductBundle\Entity\Product;
 use ProductBundle\Entity\ProductAttribute;
@@ -26,7 +27,7 @@ use Doctrine\ORM\Query\Expr;
 abstract class BaseParser
 {
     const PRODUCT_ACTUALITY = 10;
-    const SLEEP_BEFORE_SECOND_REQUEST = [3, 5];
+    const SLEEP_BEFORE_SECOND_REQUEST = [2, 4];
     protected static $attributeValueReplacements = [
         'есть' => true,
         'нет' => false
@@ -83,6 +84,7 @@ abstract class BaseParser
 
         /* if cli command then debug = true*/
         $this->debug = php_sapi_name() == 'cli';
+        $this->cookieFilePath = $this->cache_dir . 'cookie.data';
     }
 
     /**
@@ -157,13 +159,6 @@ abstract class BaseParser
         $goutteClient = new Client();
         $userAgent = false;
 
-        /* settings to save cookie */
-        $this->clientParameters['curl'][CURLOPT_COOKIEFILE] = $this->cache_dir . 'cookie.data';
-        $this->clientParameters['curl'][CURLOPT_COOKIEFILE] = $this->cache_dir . 'cookie.data';
-        $this->clientParameters['curl'][CURLOPT_RETURNTRANSFER] = 1;
-        $cookieJar = new FileCookieJar($this->cache_dir . 'cookie.data', true);
-        $this->clientParameters['cookies'] = $cookieJar;
-
         /* check use proxy ip */
         if ($this->getParserSite()->isUseProxy()) { // && !isset($this->clientParameters['proxy'])
             $proxyIp = $this->proxyList->getWhiteIp(true);
@@ -177,8 +172,17 @@ abstract class BaseParser
                 $this->clientParameters['curl'][CURLOPT_PROXYUSERPWD] = $this->proxy_userpasswd;
             }
 
+            $this->cookieFilePath = $this->cache_dir . "cookie-{$proxyIp->getIp()}.data";
+
             $userAgent = $proxyIp->getUserAgent();
         }
+
+        /* settings to save cookie */
+        $this->clientParameters['curl'][CURLOPT_COOKIEFILE] = $this->cookieFilePath;
+        $this->clientParameters['curl'][CURLOPT_COOKIEFILE] = $this->cookieFilePath;
+        $this->clientParameters['curl'][CURLOPT_RETURNTRANSFER] = 1;
+        $cookieJar = new FileCookieJar($this->cookieFilePath, true);
+        $this->clientParameters['cookies'] = $cookieJar;
 
         $guzzleClient = new \GuzzleHttp\Client($this->clientParameters);
         $goutteClient->setClient($guzzleClient);
@@ -205,7 +209,9 @@ abstract class BaseParser
 
             /* if second request after first success => use old client and sleep before next */
             if (!$forceNew && $client = $this->getGoutteClient()) {
-                $this->sleepBeforeRequest();
+                if ($client->getResponse()) {
+                    $this->sleepBeforeRequest();
+                }
             } else {
                 $client = $this->getClient();
             }
@@ -228,7 +234,7 @@ abstract class BaseParser
                     $this->proxyList->addProxyIpFail($this->proxyIp);
                 }
 
-                $crawler = $this->getCrawlerPage($pageUrl, true);
+                $crawler = $this->getCrawlerPage($pageUrl, true, $notUseCache);
             }
         }
 
@@ -246,13 +252,19 @@ abstract class BaseParser
      */
     protected function sleepBeforeRequest()
     {
-        $sleepSeconds = rand(self::SLEEP_BEFORE_SECOND_REQUEST[0], self::SLEEP_BEFORE_SECOND_REQUEST[1]);
+        $sleepUSeconds = rand(
+            self::SLEEP_BEFORE_SECOND_REQUEST[0] * 1000000,
+            self::SLEEP_BEFORE_SECOND_REQUEST[1] * 1000000
+        );
+        $sleepSeconds = floor($sleepUSeconds / 1000000);
         $this->dump(" wait {$sleepSeconds}s before next request", '');
         while ($sleepSeconds > 0) {
             sleep(1);
             $this->dump('.', '');
             $sleepSeconds--;
+            $sleepUSeconds -= 1000000;
         }
+        usleep($sleepUSeconds);
         $this->dump('');
     }
 
@@ -280,6 +292,15 @@ abstract class BaseParser
 
     /**
      * @param String
+     * @return Boolean
+     */
+    protected function isFileExistInCache($pageUrl)
+    {
+        return file_exists($this->getCacheFileName($pageUrl));
+    }
+
+    /**
+     * @param String
      * @return Crawler $crawler
      */
     protected function getCacheCrawler($pageUrl)
@@ -288,7 +309,7 @@ abstract class BaseParser
 
         $this->checkCacheDir();
 
-        if (file_exists($this->getCacheFileName($pageUrl))) {
+        if ($this->isFileExistInCache($pageUrl)) {
             $file = file_get_contents($this->getCacheFileName($pageUrl));
 
             /* make sure we have utf-8 encoding file */
@@ -377,8 +398,9 @@ abstract class BaseParser
      * Save product info into db
      * @param Product $product
      * @param String $productUrl
+     * @param Boolean $isFail
      */
-    protected function saveProductInfo($product, $productUrl)
+    protected function saveProductInfo($product, $productUrl, $isFail = false)
     {
         $productInfoRepo = $this->em->getRepository('ParsingBundle:ParsingProductInfo');
         $productInfo = $productInfoRepo->findOneBy(['product' => $product, 'site' => $this->getParserSite()]);
@@ -388,6 +410,7 @@ abstract class BaseParser
             $productInfo->setUrl($productUrl);
             $productInfo->setProduct($product);
             $productInfo->setSite($this->getParserSite());
+            $productInfo->setIsFail($isFail);
         }
 
         $this->em->persist($productInfo);
@@ -543,5 +566,56 @@ abstract class BaseParser
     protected function isFromCache()
     {
         return $this->fromCache;
+    }
+
+    /**
+     * Check if we have cookie with name $name
+     * @param String $name
+     * @return Boolean
+     */
+    protected function hasCookie($name)
+    {
+        $cookies = $this->getCookies();
+
+        if (count($cookies)) {
+            foreach ($cookies as $cookie) {
+                if ($cookie->Name === $name) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get cookies for current ip
+     */
+    protected function getCookies()
+    {
+        $cookies = [];
+        $cookiesString = @file_get_contents($this->cookieFilePath);
+
+        if ($cookiesString) {
+            $cookies = @json_decode($cookiesString);
+        }
+
+        return $cookies;
+    }
+
+    /**
+     * @return ProxyIp
+     */
+    protected function getProxyIp()
+    {
+        return $this->proxyIp;
+    }
+
+    /**
+     * Add captcha statistic to ip
+     */
+    protected function addProxyIpCaptcha()
+    {
+        $this->proxyList->addNumCaptcha($this->proxyIp);
     }
 }

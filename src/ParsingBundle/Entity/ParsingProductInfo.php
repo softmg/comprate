@@ -41,9 +41,16 @@ class ParsingProductInfo
     /**
      * @var string
      *
-     * @ORM\Column(name="url", type="string", length=255)
+     * @ORM\Column(name="url", type="string", length=2000)
      */
     private $url;
+
+    /**
+     * @var boolean
+     *
+     * @ORM\Column(name="is_fail", type="boolean")
+     */
+    private $isFail = false;
 
     /**
      * @var string
@@ -150,6 +157,22 @@ class ParsingProductInfo
     public function getUrl()
     {
         return $this->url;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getIsFail()
+    {
+        return $this->isFail;
+    }
+
+    /**
+     * @param boolean $isFail
+     */
+    public function setIsFail($isFail)
+    {
+        $this->isFail = $isFail;
     }
 
     /**
