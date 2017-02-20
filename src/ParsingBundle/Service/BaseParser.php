@@ -27,7 +27,7 @@ use Doctrine\ORM\Query\Expr;
 abstract class BaseParser
 {
     const PRODUCT_ACTUALITY = 10;
-    const SLEEP_BEFORE_SECOND_REQUEST = [2, 4];
+    protected static $sleepBeforeSecondRequest = [2, 4];
     protected static $attributeValueReplacements = [
         'есть' => true,
         'нет' => false
@@ -108,7 +108,7 @@ abstract class BaseParser
      */
     public function getParserSite()
     {
-        return $this->getParsingSiteRepo()->findOneBy(['code' => ParsingSite::YANDEX_MARKET]);
+        return $this->getParsingSiteRepo()->findOneBy(['code' => $this->getParserSiteCode()]);
     }
 
     /**
@@ -253,8 +253,8 @@ abstract class BaseParser
     protected function sleepBeforeRequest()
     {
         $sleepUSeconds = rand(
-            self::SLEEP_BEFORE_SECOND_REQUEST[0] * 1000000,
-            self::SLEEP_BEFORE_SECOND_REQUEST[1] * 1000000
+            self::$sleepBeforeSecondRequest[0] * 1000000,
+            self::$sleepBeforeSecondRequest[1] * 1000000
         );
         $sleepSeconds = floor($sleepUSeconds / 1000000);
         $this->dump(" wait {$sleepSeconds}s before next request", '');

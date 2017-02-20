@@ -37,7 +37,7 @@
         "jms/serializer-bundle": "^1.0",
         "csa/guzzle-bundle": "^2.0",
         "fabpot/goutte": "3.2.1",
-        "gladyshev/rucaptcha-client": "~1.0",
+        "gladyshev/rucaptcha-client": "1.0.4",
         "neitanod/forceutf8": "dev-master"
     },
     "require-dev": {

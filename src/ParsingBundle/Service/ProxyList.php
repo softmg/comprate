@@ -13,7 +13,7 @@ use ParsingBundle\Entity\ProxyIp;
 class ProxyList
 {
     /** @var array */
-    const TIME_INTERVAL = [12, 15]; //Interval before use one ip
+    static protected $timeInterval = [12, 15]; //Interval before use one ip
 
     /** @var Integer */
     const UNACTIVE_AFTER_NUM_FAILS = 5; //After what failes unactive ip
@@ -131,8 +131,9 @@ class ProxyList
     private function updateNextUse($proxyIp)
     {
         $lastUsed = $proxyIp->getLastUsed();
+
         /* random interval beetwen set values */
-        $checkInterval = rand(self::TIME_INTERVAL[0], self::TIME_INTERVAL[1]);
+        $checkInterval = rand(self::$timeInterval[0], self::$timeInterval[1]);
 
         /* use parabol idle */
         $checkInterval = floor($checkInterval + pow($proxyIp->getNumFail() + $proxyIp->getNumCaptcha()/5, 1.5) * $checkInterval);

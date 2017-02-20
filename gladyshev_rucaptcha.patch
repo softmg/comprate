@@ -1,0 +1,17 @@
+Index: vendor/gladyshev/rucaptcha-client/src/GenericClient.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- vendor/gladyshev/rucaptcha-client/src/GenericClient.php	(revision )
++++ vendor/gladyshev/rucaptcha-client/src/GenericClient.php	(revision )
+@@ -99,7 +99,7 @@
+     public function recognizeFile($path, array $extra = [])
+     {
+         if (!file_exists($path)) {
+-            throw new InvalidArgumentException("Captcha file `$path` not found.");
++            //throw new InvalidArgumentException("Captcha file `$path` not found.");
+         }
+ 
+         $file = new SplFileObject($path, 'r');
+\ No newline at end of file
