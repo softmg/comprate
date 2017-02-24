@@ -22,6 +22,11 @@ class PhantomJSWrapper
         $this->pathToScript = $pathToScript;
         $this->debug = true;
     }
+    
+    public function getPathToScript()
+    {
+        return $this->pathToScript;
+    }
 
     public function setProxy($proxy)
     {

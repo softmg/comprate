@@ -35,6 +35,13 @@ class SpysFreeProxyParser extends BaseFreeProxyParser
     {
         /* product list with new client */
         $crawlerPage = $this->getCrawlerPage(self::PROXY_URL, false, false, ['xpp' => 4]);
+
+        $jsEvalDecodedString = $crawlerPage->filter('script')->getNode(3)->textContent;
+
+        $parsePortJs = file_get_contents($this->phantomJsService->getPathToScript() . '/spysPort.js');
+        $parsePortJs = str_replace('<eval>', $jsEvalDecodedString, $parsePortJs);
+        file_put_contents($this->phantomJsService->getPathToScript() . '/spysNewPort.js', $parsePortJs);
+
         $ips = $crawlerPage->filter('tr tr.spy1xx')->each(function ($node) {
             $ipInfo = [];
             $trIp = $node->getNode(0);
@@ -93,7 +100,7 @@ class SpysFreeProxyParser extends BaseFreeProxyParser
     private function getPortFromJs($string)
     {
         $port = $this->phantomJsService->execute(
-            'spysPort.js',
+            'spysNewPort.js',
             ["$string"]
         );
         
