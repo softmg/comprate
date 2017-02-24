@@ -38,7 +38,8 @@
         "csa/guzzle-bundle": "^2.0",
         "fabpot/goutte": "3.2.1",
         "gladyshev/rucaptcha-client": "1.0.4",
-        "neitanod/forceutf8": "dev-master"
+        "neitanod/forceutf8": "dev-master",
+        "jonnyw/php-phantomjs": "dev-master"
     },
     "require-dev": {
         "sensio/generator-bundle": "^3.0",
@@ -52,7 +53,7 @@
     },
     "scripts": {
         "symfony-scripts": [
-            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
+
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::clearCache",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::installAssets",
@@ -60,10 +61,12 @@
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::prepareDeploymentTarget"
         ],
         "post-install-cmd": [
-            "@symfony-scripts"
+            "@symfony-scripts",
+            "PhantomInstaller\\Installer::installPhantomJS"
         ],
         "post-update-cmd": [
-            "@symfony-scripts"
+            "@symfony-scripts",
+            "PhantomInstaller\\Installer::installPhantomJS"
         ]
     },
     "extra": {
@@ -77,5 +80,8 @@
             "file": "app/config/parameters.yml"
         },
         "branch-alias": null
+    },
+    "config": {
+        "bin-dir": "bin"
     }
 }

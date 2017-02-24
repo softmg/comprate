@@ -32,7 +32,7 @@ class ProxyIp
     /**
      * @var string
      *
-     * @ORM\Column(name="user_agent", type="string", length=150)
+     * @ORM\Column(name="user_agent", type="string", length=200)
      */
     private $userAgent;
 
@@ -78,6 +78,19 @@ class ProxyIp
      */
     private $nextUse;
 
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="check_auth", type="boolean", nullable=true)
+     */
+    private $checkAuth = true;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="proxy_type", type="string", length=10)
+     */
+    private $proxyType;
 
     /**
      * Get id
@@ -247,5 +260,37 @@ class ProxyIp
     public function setNumCaptcha($numCaptcha)
     {
         $this->numCaptcha = $numCaptcha;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isCheckAuth()
+    {
+        return $this->checkAuth;
+    }
+
+    /**
+     * @param boolean $checkAuth
+     */
+    public function setCheckAuth($checkAuth)
+    {
+        $this->checkAuth = $checkAuth;
+    }
+
+    /**
+     * @return string
+     */
+    public function getProxyType()
+    {
+        return $this->proxyType;
+    }
+
+    /**
+     * @param string $proxyType
+     */
+    public function setProxyType($proxyType)
+    {
+        $this->proxyType = $proxyType;
     }
 }

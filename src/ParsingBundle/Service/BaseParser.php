@@ -23,6 +23,8 @@ use ProductBundle\Entity\ProductAttribute;
 use Symfony\Component\DomCrawler\Crawler;
 use \ForceUTF8\Encoding;
 use Doctrine\ORM\Query\Expr;
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\Finder\SplFileInfo;
 
 abstract class BaseParser
 {
@@ -198,10 +200,11 @@ abstract class BaseParser
      * @param String $pageUrl
      * @param Bool $forceNew
      * @param Bool $notUseCache
+     * @param array $parameters
      * @throws \Exception
      * @return Crawler
      */
-    public function getCrawlerPage($pageUrl, $forceNew = false, $notUseCache = false)
+    public function getCrawlerPage($pageUrl, $forceNew = false, $notUseCache = false, $parameters = [])
     {
         $this->fromCache = false;
         if ($notUseCache || ! $crawler = $this->getCacheCrawler($pageUrl)) {
@@ -216,15 +219,21 @@ abstract class BaseParser
                 $client = $this->getClient();
             }
 
-            $crawler = $client->request('GET', $pageUrl);
+            if (count($parameters)) {
+                $crawler = $client->request('POST', $pageUrl, $parameters);
+            } else {
+                $crawler = $client->request('GET', $pageUrl);
+            }
             /* check, enter captcha if exist and return new crawler or null if fail enter captcha */
             $crawler = $this->checkAndEnterCaptcha($crawler);
             $response = $client->getResponse();
 
             /* if success response => save content to cache */
             if ($crawler && $this->checkSuccessResponse($response)) {
-                $this->dump(" page $pageUrl success! Save it to cache");
-                $this->proxyList->addProxyIpSuccess($this->proxyIp);
+                $this->dump(" page $pageUrl success! Save it to cache {$this->getCacheFileName($pageUrl)}");
+                if ($this->proxyIp) {
+                    $this->proxyList->addProxyIpSuccess($this->proxyIp);
+                }
                 $this->saveCacheContent($pageUrl, $response->getContent());
             } else {
                 /*if fail try again*/
@@ -340,16 +349,34 @@ abstract class BaseParser
      */
     private function getCacheFileName($pageUrl)
     {
-        return $this->cache_dir . md5($pageUrl);
+        $filename = md5($pageUrl);
+        $firstSubDir = substr($filename, 0, 2);
+        $secondSubDir = substr($filename, 2, 2);
+        $this->checkCacheDir([$firstSubDir, $secondSubDir]);
+        $cacheFolder = $this->cache_dir . "{$firstSubDir}/{$secondSubDir}/";
+
+        return $cacheFolder . $filename;
     }
 
     /**
      * Check and create cache dir if not exist
+     * @param array $subdirs
      */
-    private function checkCacheDir()
+    private function checkCacheDir($subdirs = [])
     {
         if (!is_dir($this->cache_dir)) {
             mkdir($this->cache_dir, 0777);
+        }
+
+        $checkDir = $this->cache_dir;
+
+        if ($subdirs && count($subdirs)) {
+            foreach ($subdirs as $subdir) {
+                $checkDir .= "/$subdir";
+                if (!is_dir($checkDir)) {
+                    mkdir($checkDir, 0777);
+                }
+            }
         }
     }
 
@@ -525,6 +552,9 @@ abstract class BaseParser
     {
         $value = $productAttribute->getValue();
 
+        /* delete: in the end of property*/
+        $value = preg_replace('/:$/s', '', $value);
+
         if (in_array($value, array_keys(self::$attributeValueReplacements))) {
             $value = self::$attributeValueReplacements[$value];
         }
@@ -612,10 +642,30 @@ abstract class BaseParser
     }
 
     /**
+     * @return proxyList
+     */
+    protected function getProxyList()
+    {
+        return $this->proxyList;
+    }
+
+    /**
      * Add captcha statistic to ip
      */
     protected function addProxyIpCaptcha()
     {
         $this->proxyList->addNumCaptcha($this->proxyIp);
+    }
+
+    protected function moveCacheToSubDirs()
+    {
+        $finder = new Finder();
+        $finder->files()->depth('== 0')->in($this->cache_dir);
+
+        /** @var SplFileInfo $file */
+        foreach ($finder as $file) {
+            // Dump the absolute path
+            //$file->getRelativePath()
+        }
     }
 }

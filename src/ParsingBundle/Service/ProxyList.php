@@ -23,6 +23,9 @@ class ProxyList
 
     /** @var bool */
     private $debug = false;
+    
+    /** @var  array */
+    private $userAgents;
 
     /**
      * @param \Doctrine\ORM\EntityManager $em
@@ -33,6 +36,17 @@ class ProxyList
 
         /* if cli command then debug = true*/
         $this->debug = php_sapi_name() == 'cli';
+    }
+    
+    private function getRandomUserAgent()
+    {
+        if (!$this->userAgents) {
+            require_once('userAgents.php');
+
+            $this->userAgents = $userAgents;
+        }
+
+        return $this->userAgents[array_rand($this->userAgents, 1)];
     }
 
     /**
@@ -158,6 +172,44 @@ class ProxyList
         $this->em->flush();
 
         return $proxyIp;
+    }
+
+    /**
+     * Add new proxy ip if not exists
+     * @param String $ip
+     * @param bool $checkAuth
+     * @param String $proxyType
+     */
+    public function addProxy($ip, $checkAuth = true, $proxyType = 'http')
+    {
+        $proxyIpRepo = $this->em->getRepository('ParsingBundle:ProxyIp');
+
+        /* check if we have even one active IP in db */
+        if (!$proxyIpRepo->findOneBy(['ip' => $ip]) && $this->checkProxy($ip)) {
+            $proxyIp = new ProxyIp();
+            $proxyIp->setIp($ip);
+            $proxyIp->setCheckAuth($checkAuth);
+            $proxyIp->setProxyType($proxyType);
+            $proxyIp->setUserAgent($this->getRandomUserAgent());
+
+            $this->dump(" added new proxy: {$ip}");
+
+            $this->em->persist($proxyIp);
+            $this->em->flush();
+        }
+    }
+
+    /**
+     * Check if correct $ip
+     * @param String $ip
+     * @return bool
+     */
+    protected function checkProxy($ip)
+    {
+        return preg_match(
+            '/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?:\:[0-9]{3,4})?$/s',
+            $ip
+        );
     }
 
     /**

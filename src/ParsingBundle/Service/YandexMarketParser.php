@@ -21,6 +21,9 @@ class YandexMarketParser extends BaseParser
      */
     public function run()
     {
+        $this->moveCacheToSubDirs();
+        
+        exit;
         //$crawler = $this->getCacheCrawler('captcha');
         //$captchaImg = $crawler->filter('.form__captcha')->getNode(0)->getAttribute('src');
         //var_dump($captchaImg); exit;

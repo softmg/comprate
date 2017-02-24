@@ -51,6 +51,13 @@ class ParsingSite
      */
     private $useProxy = false;
 
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="is_free_proxy", type="boolean", nullable=true)
+     */
+    private $isFreeProxy = false;
+
 
     /**
      * Get id
@@ -140,5 +147,21 @@ class ParsingSite
     public function setUseProxy($useProxy)
     {
         $this->useProxy = $useProxy;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isIsFreeProxy()
+    {
+        return $this->isFreeProxy;
+    }
+
+    /**
+     * @param boolean $isFreeProxy
+     */
+    public function setIsFreeProxy($isFreeProxy)
+    {
+        $this->isFreeProxy = $isFreeProxy;
     }
 }
