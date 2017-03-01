@@ -8,7 +8,7 @@
 namespace ParsingBundle\Service;
 
 use Doctrine\ORM\EntityManager;
-use Goutte\Client;
+use Goutte\Client as GoutteClient;
 use GuzzleHttp\Cookie\FileCookieJar;
 use ParsingBundle\Entity\ParsingAttributeInfo;
 use ParsingBundle\Entity\ParsingProductInfo;
@@ -28,7 +28,7 @@ use Symfony\Component\Finder\SplFileInfo;
 
 abstract class BaseParser
 {
-    const PRODUCT_ACTUALITY = 10;
+    const PRODUCT_ACTUALITY = 100;
     protected static $sleepBeforeSecondRequest = [2, 4];
     protected static $attributeValueReplacements = [
         'есть' => true,
@@ -39,28 +39,31 @@ abstract class BaseParser
     private $em;
 
     /** @var  ProxyList */
-    private $proxyList;
+    protected $proxyList;
 
     /** @var  String */
-    private $cache_dir;
+    protected $phantomJsScriptPath;
+
+    /** @var  String */
+    protected $cache_dir;
 
     /** @var  String */
     private $rucaptcha_token;
 
-    /** @var  Client */
-    private $goutteClient;
+    /** @var  GoutteClient|PhantomJSClient */
+    private $currentClient;
 
     /** @var  Crawler */
     private $crawler;
 
     /** @var  array */
-    private $clientParameters = [];
+    protected $clientParameters = [];
 
     /** @var  String (user:passwd) */
-    private $proxy_userpasswd;
+    protected $proxy_userpasswd;
 
     /** @var  ProxyIp */
-    private $proxyIp;
+    protected $proxyIp;
 
     /** @var bool */
     private $debug = false;
@@ -77,7 +80,7 @@ abstract class BaseParser
      * @param ProxyList $cache_dir
      * @param $rucaptcha_token
      */
-    public function __construct(EntityManager $em, ProxyList $proxyList, $cache_dir, $rucaptcha_token)
+    public function __construct(EntityManager $em, ProxyList $proxyList, $cache_dir, $rucaptcha_token, $phantomJsScriptPath)
     {
         $this->em = $em;
         $this->proxyList = $proxyList;
@@ -87,6 +90,7 @@ abstract class BaseParser
         /* if cli command then debug = true*/
         $this->debug = php_sapi_name() == 'cli';
         $this->cookieFilePath = $this->cache_dir . 'cookie.data';
+        $this->phantomJsScriptPath = $phantomJsScriptPath;
     }
 
     /**
@@ -154,11 +158,11 @@ abstract class BaseParser
     }
 
     /**
-     * @return Client
+     * @return GoutteClient
      */
-    public function getClient()
+    private function getGoutteClient()
     {
-        $goutteClient = new Client();
+        $goutteClient = new GoutteClient();
         $userAgent = false;
 
         /* check use proxy ip */
@@ -191,9 +195,51 @@ abstract class BaseParser
         $goutteClient->setGuzzleCookieJar($cookieJar);
         $goutteClient->setHeader('User-Agent', $userAgent);
 
-        $this->goutteClient = $goutteClient;
+        $this->currentClient = $goutteClient;
 
         return $goutteClient;
+    }
+
+    /**
+     * @return PhantomJSClient
+     */
+    private function getPhantomJsClient()
+    {
+        $client = new PhantomJSClient($this->phantomJsScriptPath, $this->debug);
+
+        /* check use proxy ip */
+        if ($this->getParserSite()->isUseProxy()) { // && !isset($this->clientParameters['proxy'])
+            $proxyIp = $this->proxyList->getWhiteIp(true);
+            $this->proxyIp = $proxyIp;
+            $proxyType = $proxyIp->getProxyType() ? $proxyIp->getProxyType() : 'http';
+            $client->setProxy($proxyIp->getIp());
+            $client->setProxyType($proxyType);
+
+            $this->dump(" proxy ip: {$proxyIp->getIp()}, user-agent: {$proxyIp->getUserAgent()}");
+
+            /* check if port for auth */
+            if (strpos($proxyIp->getIp(), '8080') && $this->proxy_userpasswd && $proxyIp->isCheckAuth()) {
+                $client->setProxyAuth($this->proxy_userpasswd);
+            }
+
+            $client->setCookiesFile($this->cache_dir . "cookie-{$proxyIp->getIp()}.data");
+
+            $userAgent = $proxyIp->getUserAgent();
+
+            $client->setUserAgent($userAgent);
+        }
+
+        $this->currentClient = $client;
+
+        return $client;
+    }
+
+    /**
+     * @return GoutteClient|PhantomJSClient
+     */
+    protected function getClient()
+    {
+        return $this->phantomJsScriptPath ? $this->getPhantomJsClient() : $this->getGoutteClient();
     }
 
     /**
@@ -211,7 +257,7 @@ abstract class BaseParser
             $this->fromCache = true;
 
             /* if second request after first success => use old client and sleep before next */
-            if (!$forceNew && $client = $this->getGoutteClient()) {
+            if (!$forceNew && $client = $this->getCurrentClient()) {
                 if ($client->getResponse()) {
                     $this->sleepBeforeRequest();
                 }
@@ -225,7 +271,9 @@ abstract class BaseParser
                 $crawler = $client->request('GET', $pageUrl);
             }
             /* check, enter captcha if exist and return new crawler or null if fail enter captcha */
-            $crawler = $this->checkAndEnterCaptcha($crawler);
+            if ($crawler) {
+                $crawler = $this->checkAndEnterCaptcha($crawler);
+            }
             $response = $client->getResponse();
 
             /* if success response => save content to cache */
@@ -344,18 +392,28 @@ abstract class BaseParser
     }
 
     /**
+     * @param String $md5url
+     * @return String
+     */
+    private function getCacheFileNameForMd5($md5url)
+    {
+        $firstSubDir = substr($md5url, 0, 2);
+        $secondSubDir = substr($md5url, 2, 2);
+        $this->checkCacheDir([$firstSubDir, $secondSubDir]);
+        $cacheFolder = $this->cache_dir . "{$firstSubDir}/{$secondSubDir}/";
+
+        return $cacheFolder . $md5url;
+    }
+
+    /**
      * @param String $pageUrl
      * @return String
      */
     private function getCacheFileName($pageUrl)
     {
-        $filename = md5($pageUrl);
-        $firstSubDir = substr($filename, 0, 2);
-        $secondSubDir = substr($filename, 2, 2);
-        $this->checkCacheDir([$firstSubDir, $secondSubDir]);
-        $cacheFolder = $this->cache_dir . "{$firstSubDir}/{$secondSubDir}/";
+        $md5url = md5($pageUrl);
 
-        return $cacheFolder . $filename;
+        return $this->getCacheFileNameForMd5($md5url);
     }
 
     /**
@@ -381,11 +439,11 @@ abstract class BaseParser
     }
 
     /**
-     * @return Client
+     * @return GoutteClient|PhantomJSClient
      */
-    protected function getGoutteClient()
+    protected function getCurrentClient()
     {
-        return $this->goutteClient;
+        return $this->currentClient;
     }
 
     /**
@@ -665,7 +723,7 @@ abstract class BaseParser
         /** @var SplFileInfo $file */
         foreach ($finder as $file) {
             // Dump the absolute path
-            //$file->getRelativePath()
+            rename("{$file->getRealPath()}", "{$this->getCacheFileNameForMd5($file->getRelativePathname())}");
         }
     }
 }

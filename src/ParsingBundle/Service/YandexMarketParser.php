@@ -21,9 +21,6 @@ class YandexMarketParser extends BaseParser
      */
     public function run()
     {
-        $this->moveCacheToSubDirs();
-        
-        exit;
         //$crawler = $this->getCacheCrawler('captcha');
         //$captchaImg = $crawler->filter('.form__captcha')->getNode(0)->getAttribute('src');
         //var_dump($captchaImg); exit;
@@ -34,6 +31,7 @@ class YandexMarketParser extends BaseParser
         //$captchaText = $rucaptcha->recognizeFile('https://na.captcha.yandex.net/image?key=c1FSkolaNoVoM59xayyxfFXaJmQb6cUo');
         //var_dump($captchaText);
 //exit;
+
         $products = $this->getProductsForFirstParsing();
 
         foreach ($products as $product) {
@@ -128,7 +126,7 @@ class YandexMarketParser extends BaseParser
             
             $this->addProxyIpCaptcha();
 
-            $this->saveCacheContent('captcha', $this->getGoutteClient()->getResponse()->getContent());
+            $this->saveCacheContent('captcha', $this->getCurrentClient()->getResponse()->getContent());
             $captchaText = false;
             if ($this->getRucaptchaToken()) {
                 $rucaptcha = new \Rucaptcha\Client($this->getRucaptchaToken());
@@ -140,7 +138,7 @@ class YandexMarketParser extends BaseParser
                 $this->dump(" recognize captcha and try again");
 
                 $form = $crawler->filter('form')->form();
-                $crawler = $this->getGoutteClient()->submit($form, array(
+                $crawler = $this->getCurrentClient()->submit($form, array(
                     'rep' => $captchaText
                 ));
 

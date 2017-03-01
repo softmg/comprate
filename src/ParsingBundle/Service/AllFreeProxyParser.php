@@ -50,7 +50,7 @@ class AllFreeProxyParser
                 $parser = $this->container->get("parsing.{$freeProxySite->getCode()}");
                 if ($parser) {
                     $this->dump("get new proxies from {$freeProxySite->getUrl()}");
-                    $parser->setPhantomJsService($this->container->get('parsing.phantom.wrap'));
+                    $parser->setPhantomJsService($this->container->get('parsing.phantom.client'));
                     $parser->run();
                 }
             }

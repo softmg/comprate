@@ -9,7 +9,7 @@ services:
 
     parsing.yandex_market:
         class: ParsingBundle\Service\YandexMarketParser
-        arguments: ["@doctrine.orm.entity_manager", "@parsing.proxy_list", "%parsing.cache_dir%", "%rucaptcha_token%"]
+        arguments: ["@doctrine.orm.entity_manager", "@parsing.proxy_list", "%parsing.cache_dir%", "%rucaptcha_token%", "%parsing.phantom_dir%/yandex_market.js"]
 
     parsing.all_free_proxy:
         class: ParsingBundle\Service\AllFreeProxyParser
@@ -19,6 +19,6 @@ services:
         class: ParsingBundle\Service\SpysFreeProxyParser
         arguments: ["@doctrine.orm.entity_manager", "@parsing.proxy_list", "%parsing.cache_dir%", "%rucaptcha_token%"]
 
-    parsing.phantom.wrap:
-        class: ParsingBundle\Service\PhantomJSWrapper
+    parsing.phantom.client:
+        class: ParsingBundle\Service\PhantomJSClient
         arguments: ["%parsing.phantom_dir%"]

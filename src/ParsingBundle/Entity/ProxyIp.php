@@ -93,6 +93,14 @@ class ProxyIp
     private $proxyType;
 
     /**
+     * @var ParsingSite
+     *
+     * @ORM\ManyToOne(targetEntity="ParsingSite")
+     * @ORM\JoinColumn(name="parsing_site_id", referencedColumnName="id")
+     */
+    private $parsingSite;
+
+    /**
      * Get id
      *
      * @return int
@@ -292,5 +300,21 @@ class ProxyIp
     public function setProxyType($proxyType)
     {
         $this->proxyType = $proxyType;
+    }
+
+    /**
+     * @return \ParsingBundle\Entity\ParsingSite
+     */
+    public function getParsingSite()
+    {
+        return $this->parsingSite;
+    }
+
+    /**
+     * @param \ParsingBundle\Entity\ParsingSite $parsingSite
+     */
+    public function setParsingSite($parsingSite)
+    {
+        $this->parsingSite = $parsingSite;
     }
 }

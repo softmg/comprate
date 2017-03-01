@@ -11,7 +11,7 @@ class SpysFreeProxyParser extends BaseFreeProxyParser
 {
     const PROXY_URL = 'http://spys.ru/free-proxy-list/RU/';
 
-    /** @var  PhantomJSWrapper */
+    /** @var  PhantomJSClient */
     private $phantomJsService;
 
     public function getParserSiteCode()
@@ -21,7 +21,7 @@ class SpysFreeProxyParser extends BaseFreeProxyParser
     
     /**
      * Set phantom js service
-     * @param PhantomJSWrapper $phantomJsService
+     * @param PhantomJSClient $phantomJsService
      */
     public function setPhantomJsService($phantomJsService)
     {
