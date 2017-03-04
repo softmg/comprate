@@ -203,6 +203,14 @@ class PhantomJSClient
     }
 
     /**
+     * @return array
+     */
+    public function getJsonResponseArray()
+    {
+        return $this->jsonResponse;
+    }
+
+    /**
      * @param String $message
      * @param String $newLine
      */

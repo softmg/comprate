@@ -24,3 +24,5 @@ parameters:
     # nelmio api docs
     api_name: 'Comprate REST frontend'
     api_description: 'REST API for frontend'
+    rucaptcha_token: someToken
+    proxy_userpasswd: logn:pass

@@ -90,7 +90,7 @@ class ParsingProductInfo
     /**
      * Set product
      *
-     * @param string $product
+     * @param Product $product
      *
      * @return ParsingProductInfo
      */
@@ -104,7 +104,7 @@ class ParsingProductInfo
     /**
      * Get product
      *
-     * @return string
+     * @return Product
      */
     public function getProduct()
     {

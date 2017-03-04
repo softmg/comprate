@@ -36,7 +36,7 @@ abstract class BaseParser
     ];
 
     /** @var  EntityManager */
-    private $em;
+    protected $em;
 
     /** @var  ProxyList */
     protected $proxyList;
@@ -74,18 +74,36 @@ abstract class BaseParser
     // Will hold path to a writable location/file
     protected $cookieFilePath;
 
+    /** @var  String */
+    private $parsedInnerHost;
+
+    /** @var  Bool */
+    private $notUseProxy = false;
+
+    /** @var Bool */
+    private $notTryAgainAfterFail = false;
+
     /**
      * @param \Doctrine\ORM\EntityManager $em
      * @param ProxyList $proxyList
-     * @param ProxyList $cache_dir
-     * @param $rucaptcha_token
+     * @param String $cache_dir
+     * @param String $rucaptcha_token
+     * @param String $proxy_userpasswd
+     * @param String $phantomJsScriptPath
      */
-    public function __construct(EntityManager $em, ProxyList $proxyList, $cache_dir, $rucaptcha_token, $phantomJsScriptPath)
-    {
+    public function __construct(
+        EntityManager $em,
+        ProxyList $proxyList,
+        $cache_dir,
+        $rucaptcha_token,
+        $proxy_userpasswd,
+        $phantomJsScriptPath
+    ) {
         $this->em = $em;
         $this->proxyList = $proxyList;
         $this->cache_dir = $cache_dir;
         $this->rucaptcha_token = $rucaptcha_token;
+        $this->proxy_userpasswd = $proxy_userpasswd;
 
         /* if cli command then debug = true*/
         $this->debug = php_sapi_name() == 'cli';
@@ -166,7 +184,7 @@ abstract class BaseParser
         $userAgent = false;
 
         /* check use proxy ip */
-        if ($this->getParserSite()->isUseProxy()) { // && !isset($this->clientParameters['proxy'])
+        if ($this->getParserSite()->isUseProxy() && !$this->notUseProxy) { // && !isset($this->clientParameters['proxy'])
             $proxyIp = $this->proxyList->getWhiteIp(true);
             $this->proxyIp = $proxyIp;
             $this->clientParameters['proxy'] = $proxyIp->getIp();
@@ -208,7 +226,7 @@ abstract class BaseParser
         $client = new PhantomJSClient($this->phantomJsScriptPath, $this->debug);
 
         /* check use proxy ip */
-        if ($this->getParserSite()->isUseProxy()) { // && !isset($this->clientParameters['proxy'])
+        if ($this->getParserSite()->isUseProxy() && !$this->notUseProxy) { // && !isset($this->clientParameters['proxy'])
             $proxyIp = $this->proxyList->getWhiteIp(true);
             $this->proxyIp = $proxyIp;
             $proxyType = $proxyIp->getProxyType() ? $proxyIp->getProxyType() : 'http';
@@ -227,6 +245,8 @@ abstract class BaseParser
             $userAgent = $proxyIp->getUserAgent();
 
             $client->setUserAgent($userAgent);
+        } else {
+            $client->setCookiesFile($this->cache_dir . "cookie.data");
         }
 
         $this->currentClient = $client;
@@ -254,8 +274,6 @@ abstract class BaseParser
     {
         $this->fromCache = false;
         if ($notUseCache || ! $crawler = $this->getCacheCrawler($pageUrl)) {
-            $this->fromCache = true;
-
             /* if second request after first success => use old client and sleep before next */
             if (!$forceNew && $client = $this->getCurrentClient()) {
                 if ($client->getResponse()) {
@@ -283,7 +301,7 @@ abstract class BaseParser
                     $this->proxyList->addProxyIpSuccess($this->proxyIp);
                 }
                 $this->saveCacheContent($pageUrl, $response->getContent());
-            } else {
+            } elseif (!$this->notTryAgainAfterFail) {
                 /*if fail try again*/
                 $this->dump(" page $pageUrl fail! Try it again");
 
@@ -295,7 +313,7 @@ abstract class BaseParser
             }
         }
 
-        if (!$crawler) {
+        if (!$crawler && !$this->notTryAgainAfterFail) {
             throw new \Exception("Error to get crawler page from url \"{$pageUrl}\"");
         }
 
@@ -377,6 +395,8 @@ abstract class BaseParser
                 $this->dump(" get page $pageUrl from cache {$this->getCacheFileName($pageUrl)}");
             }
         }
+
+        $this->fromCache = true;
 
         return $crawler;
     }
@@ -489,14 +509,18 @@ abstract class BaseParser
     {
         $productInfoRepo = $this->em->getRepository('ParsingBundle:ParsingProductInfo');
         $productInfo = $productInfoRepo->findOneBy(['product' => $product, 'site' => $this->getParserSite()]);
+        $productUrl = $this->clearUrl($productUrl, false);
 
         if (!$productInfo) {
             $productInfo = new ParsingProductInfo();
-            $productInfo->setUrl($productUrl);
             $productInfo->setProduct($product);
             $productInfo->setSite($this->getParserSite());
-            $productInfo->setIsFail($isFail);
         }
+
+        if ($productUrl) {
+            $productInfo->setUrl($productUrl);
+        }
+        $productInfo->setIsFail($isFail);
 
         $this->em->persist($productInfo);
         $this->em->flush();
@@ -725,5 +749,87 @@ abstract class BaseParser
             // Dump the absolute path
             rename("{$file->getRealPath()}", "{$this->getCacheFileNameForMd5($file->getRelativePathname())}");
         }
+    }
+
+    /**
+     * Clear url: check has scheme and not query from cache
+     * @param String $url
+     * @param Bool $clearQuery
+     * @return String
+     */
+    protected function clearUrl($url, $clearQuery = true)
+    {
+        $url = $this->checkUrlScheme($url);
+
+        if (strpos($url, 'http') === false) {
+            $url = $this->getParserSite()->getUrl() . $url;
+        }
+
+        if ($this->isFromCache() && $clearQuery) {
+            $url = $this->getUrlWithoutQuery($url);
+        }
+
+        return $url;
+    }
+
+    /**
+     * Get url without query parameters
+     * @param String $url
+     * @return String
+     */
+    protected function getUrlWithoutQuery($url)
+    {
+        if ($urlParse = @parse_url($url)) {
+            $url = "{$urlParse['scheme']}:{$urlParse['host']}{$urlParse['path']}";
+        }
+
+        return $url;
+    }
+
+    /**
+     * Get parsing site scheme (http|https)
+     * @return String
+     */
+    protected function getParsingSiteScheme()
+    {
+        $url = $this->getParserSite()->getUrl();
+        $urlInfo = parse_url($url);
+
+        return $urlInfo['scheme'];
+    }
+
+    /**
+     * Check if url has scheme (http|https), if not than add
+     * @param String $url
+     * @return String
+     */
+    protected function checkUrlScheme($url)
+    {
+        if (strpos($url, '//') === 0) {
+            $url = "{$this->getParsingSiteScheme()}:$url";
+        }
+
+        return $url;
+    }
+
+    /**
+     * @param string $url
+     * @return bool
+     */
+    protected function isExternalUrl($url)
+    {
+        $this->parsedInnerHost = $this->parsedInnerHost ?: parse_url($this->getParserSite()->getUrl())['host'];
+
+        return parse_url($url)['host'] !== $this->parsedInnerHost;
+    }
+
+    protected function setNotUseProxy($notUseProxy)
+    {
+        $this->notUseProxy = $notUseProxy;
+    }
+
+    protected function setNotTryAgainAfterFail($notTryAgainAfterFail)
+    {
+        $this->notTryAgainAfterFail = $notTryAgainAfterFail;
     }
 }

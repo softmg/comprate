@@ -21,17 +21,6 @@ class YandexMarketParser extends BaseParser
      */
     public function run()
     {
-        //$crawler = $this->getCacheCrawler('captcha');
-        //$captchaImg = $crawler->filter('.form__captcha')->getNode(0)->getAttribute('src');
-        //var_dump($captchaImg); exit;
-        //$crawlerPage = $this->getCrawlerPage('http://test1.softmg.ru/testip.php', true, true);
-        //var_dump($this->getGoutteClient()->getResponse()->getContent()); exit;
-        //$rucaptcha = new \Rucaptcha\Client($this->getRucaptchaToken());
-        //$captchaText = false;
-        //$captchaText = $rucaptcha->recognizeFile('https://na.captcha.yandex.net/image?key=c1FSkolaNoVoM59xayyxfFXaJmQb6cUo');
-        //var_dump($captchaText);
-//exit;
-
         $products = $this->getProductsForFirstParsing();
 
         foreach ($products as $product) {
@@ -45,12 +34,13 @@ class YandexMarketParser extends BaseParser
 
         /* three page chain like human */
         if ($this->isFromCache() && $productUrl) {
-            $urlForRequest = $this->getParserSite()->getUrl() . $productUrl;
+            $urlForRequest = $this->clearUrl($productUrl);
             $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
             $charactersiticLink = $crawlerPage->selectLink('Характеристики');
             if ($charactersiticLink->count()) {
                 $urlForRequest = $charactersiticLink->getNode(0)->getAttribute('href');
+                $urlForRequest = $this->clearUrl($urlForRequest);
             } else {
                 $this->dump(" Can not get charachteristics link $urlForRequest");
             }
@@ -73,24 +63,78 @@ class YandexMarketParser extends BaseParser
 
         if (strpos($productUrl, 'redir') !== false || !$productUrl) {
             /* save failed results too */
-            $this->saveProductInfo($product, $this->getParserSite()->getUrl() . $productUrl, true);
+            $this->saveProductInfo($product, $productUrl, true);
 
             return;
         }
 
         $urlForRequest = $this->getCharacteristicUrl($productUrl, $productId);
-
         $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
-        $attributes = $crawlerPage->filter('.product-spec__name-inner')->each(function ($node) {
-            $text = $node->text();
-            $attribute = strpos($text, '?') ? substr($node->text(), 0, strpos($text, '?')) : $text;
-            return trim($attribute);
-        });
-        $attributesValues =  $crawlerPage->filter('.product-spec__value-inner')->each(function ($node) {
-            $text = $node->text();
-            return trim($text);
-        });
+        $this->parseProductCharacteristicPage($product, $crawlerPage, $urlForRequest);
+
+        $this->saveProductInfo($product, $productUrl);
+    }
+
+    /**
+     * Parse page with product characteristics
+     * @param Product $product
+     * @param Crawler
+     * @param String
+     * @throws \Exception
+     * @return Bool
+     */
+    protected function parseProductCharacteristicPage($product, $productPageCrawler, $urlForRequest)
+    {
+        $attributes = [];
+        $attributesValues = [];
+
+        if ($productPageCrawler->filter('.product-spec__name-inner')->count()) {
+            $attributes = $productPageCrawler->filter('.product-spec__name-inner')
+                ->each(function ($node) {
+                    $text = $node->text();
+                    $attribute = strpos($text, '?') ? substr($node->text(), 0, strpos($text, '?')) : $text;
+
+                    return trim($attribute);
+                });
+            $attributesValues = $productPageCrawler->filter('.product-spec__value-inner')
+                ->each(function ($node) {
+                    $text = $node->text();
+
+                    return trim($text);
+                });
+        } elseif ($productPageCrawler->filter('.b-link')->count()) {
+            $attributes = $productPageCrawler->filter('.b-techspec__name')
+                ->each(function ($node) {
+                    $text = $node->text();
+                    $attribute = strpos($text, '?') ? substr($node->text(), 0, strpos($text, '?')) : $text;
+
+                    return trim($attribute);
+                });
+            $attributesValues = $productPageCrawler->filter('.b-techspec__item')
+                ->each(function ($node) {
+                    $node->removeChild($node->getElementsByTagName('span')->item(0));
+
+                    $text = $node->text();
+                    $attribute = strpos($text, '?') ? substr($node->text(), 0, strpos($text, '?')) : $text;
+                    return trim($attribute);
+                });
+        } elseif ($productPageCrawler->filter('.n-offer-card-info__warnings')->count()) {
+            $attributes = $productPageCrawler->filter('.n-product-spec-list__item')
+                ->each(function ($node) {
+                    $text = $node->text();
+                    $parametersAr = explode(':', $text);
+
+                    return trim($parametersAr[0]);
+                });
+            $attributesValues = $productPageCrawler->filter('.n-product-spec-list__item')
+                ->each(function ($node) {
+                    $text = $node->text();
+                    $parametersAr = explode(':', $text);
+
+                    return trim($parametersAr[1]);
+                });
+        }
 
         if (count($attributes)) {
             if (count($attributes) !== count($attributesValues)) {
@@ -101,9 +145,11 @@ class YandexMarketParser extends BaseParser
             }
         } else {
             $this->dump(" Does not get attributes from page $urlForRequest");
+
+            return false;
         }
 
-        $this->saveProductInfo($product, $this->getParserSite()->getUrl() . $productUrl);
+        return true;
     }
 
     /**
@@ -171,7 +217,9 @@ class YandexMarketParser extends BaseParser
 
         if (!$this->hasCookie('yandex_gid')) {
             $this->getCrawlerPage('https://yandex.ru/', false, true);
-            $this->dump(" go to yandex to set cookie for ip: {$this->getProxyIp()->getIp()}");
+            if ($this->getProxyIp()) {
+                $this->dump(" go to yandex to set cookie for ip: {$this->getProxyIp()->getIp()}");
+            }
         }
 
         if (!$this->isFileExistInCache($urlForRequest)) {
