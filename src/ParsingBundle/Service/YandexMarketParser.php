@@ -13,6 +13,8 @@ use Symfony\Component\DomCrawler\Crawler;
 
 class YandexMarketParser extends BaseParser
 {
+    protected $notUseCacheForSearch = false;
+
     const SEARCH_URL = 'https://market.yandex.ru/search.xml?text=%s';
     const PRODUCT_URL = 'https://market.yandex.ru/product/%d/spec';
 
@@ -205,12 +207,12 @@ class YandexMarketParser extends BaseParser
     * @throws \Exception
     * @return String
     */
-    private function getProductUrlAndId($productName)
+    protected function getProductUrlAndId($productName)
     {
         $productId = false;
         $yandexProductUrl = false;
 
-        $urlForRequest = sprintf(self::SEARCH_URL, $productName);
+        $urlForRequest = sprintf(self::SEARCH_URL, urlencode($productName));
 
         /* get new client and proxy ip */
         $this->getClient();
@@ -222,13 +224,13 @@ class YandexMarketParser extends BaseParser
             }
         }
 
-        if (!$this->isFileExistInCache($urlForRequest)) {
+        if (!$this->isFileExistInCache($urlForRequest) || $this->notUseCacheForSearch) {
             /* in first go to main site page */
             $this->getCrawlerPage($this->getParserSite()->getUrl(), false, true);
         }
 
         /* product list with new client */
-        $crawlerPage = $this->getCrawlerPage($urlForRequest);
+        $crawlerPage = $this->getCrawlerPage($urlForRequest, false, $this->notUseCacheForSearch);
 
         $header_link = $crawlerPage->filter('.snippet-card__header-link');
         if ($header_link->count()) {

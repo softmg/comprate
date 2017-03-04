@@ -41,7 +41,7 @@ class ParsingProductInfo
     /**
      * @var string
      *
-     * @ORM\Column(name="url", type="string", length=2000)
+     * @ORM\Column(name="url", type="string", length=3000)
      */
     private $url;
 
