@@ -67,6 +67,13 @@ class Product
     private $price;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="is_actual", type="boolean", nullable=true)
+     */
+    private $isActual = true;
+
+    /**
      * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="product", cascade={"persist"})
      */
     private $productAttributes;
@@ -236,6 +243,22 @@ class Product
     /**
      * @return mixed
      */
+    public function getIsActual()
+    {
+        return $this->isActual;
+    }
+
+    /**
+     * @param mixed $isActual
+     */
+    public function setIsActual($isActual)
+    {
+        $this->isActual = $isActual;
+    }
+
+    /**
+     * @return mixed
+     */
     public function getProductAttributes()
     {
         return $this->productAttributes;
@@ -245,9 +268,10 @@ class Product
      * @return string
      */
     public function getProductAttributesString()
-    {   $res = [];
+    {
+        $res = [];
         /** @var ProductAttribute $attr */
-        foreach($this->getProductAttributes() as $attr){
+        foreach ($this->getProductAttributes() as $attr) {
             $res[] = $attr->getValue();
         }
         return join(", ", $res);
@@ -255,9 +279,11 @@ class Product
 
 
     /**
-     * @param mixed $productAttribute
+     * @param ProductAttribute $productAttribute
+     * @return Product
      */
-    public function addProductAttribute($productAttribute){
+    public function addProductAttribute($productAttribute)
+    {
         $productAttribute->setProduct($this);
         $this->productAttributes->add($productAttribute);
         return $this;

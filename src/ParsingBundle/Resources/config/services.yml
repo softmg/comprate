@@ -47,6 +47,16 @@ services:
             - ""
             - ""
 
+    parsing.pcpartpicker_product_info:
+        class: ParsingBundle\Service\PcpartpickerProductInfoParser
+        arguments:
+            - "@doctrine.orm.entity_manager"
+            - "@parsing.proxy_list"
+            - "%parsing.cache_dir%"
+            - "%rucaptcha_token%"
+            - ""
+            - ""
+
     parsing.all_free_proxy:
         class: ParsingBundle\Service\AllFreeProxyParser
         arguments: ["@service_container"]

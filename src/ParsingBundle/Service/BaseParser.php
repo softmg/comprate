@@ -32,7 +32,15 @@ abstract class BaseParser
     protected static $sleepBeforeSecondRequest = [2, 4];
     protected static $attributeValueReplacements = [
         'есть' => true,
-        'нет' => false
+        'нет' => false,
+        'да' => true,
+        'Yes' => true,
+        'No' => false
+    ];
+
+    protected static $attributeMeasReplacements = [
+        'Гб' => ['gb'],
+        'МГц' => ['MHz']
     ];
 
     /** @var  EntityManager */
@@ -514,7 +522,6 @@ abstract class BaseParser
     {
         $productInfoRepo = $this->em->getRepository('ParsingBundle:ParsingProductInfo');
         $productInfo = $productInfoRepo->findOneBy(['product' => $product, 'site' => $this->getParserSite()]);
-        $productUrl = $this->clearUrl($productUrl, false);
 
         if (!$productInfo) {
             $productInfo = new ParsingProductInfo();
@@ -523,6 +530,7 @@ abstract class BaseParser
         }
 
         if ($productUrl) {
+            $productUrl = $this->clearUrl($productUrl, false);
             $productInfo->setUrl($productUrl);
         }
         $productInfo->setIsFail($isFail);
@@ -621,6 +629,8 @@ abstract class BaseParser
 
                 $this->em->persist($productAttribute);
                 $this->em->flush();
+
+                $result = $productAttribute;
             }
         } else {
             $this->dump(" we need to set attribute to attribute info '$name'");
@@ -648,7 +658,11 @@ abstract class BaseParser
 
         $attribute = $productAttribute->getAttribute();
         if ($attribute->getUnit()) {
-            $value = trim(str_replace($attribute->getUnit(), '', $value));
+            $search []= $attribute->getUnit();
+            if (isset(self::$attributeMeasReplacements[$attribute->getUnit()])) {
+                $search = array_merge($search, self::$attributeMeasReplacements[$attribute->getUnit()]);
+            }
+            $value = trim(str_replace($search, '', $value));
         }
 
         $this->checkAttributeValueFromExists($attribute, $value);

@@ -13,6 +13,9 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Attribute
 {
+    const MOTH_MEMORY_FREQ = 'moth_memory_freq';
+    const MOTH_MEMORY_FORM_FACTOR = 'moth_memory_form_factor';
+
     /**
      * @var int
      *

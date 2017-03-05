@@ -84,7 +84,7 @@ class PcpartpickerParser extends BaseParser
             if (strpos($productUrl, '/product/') !== false) {
                 $product = $this->addProduct($node->text(), ProductType::MOTHERBOARD);
                 if ($product) {
-                    $this->saveProductInfo($product, $productUrl);
+                    $this->saveProductInfo($product, $productUrl, true);
                 }
             }
         });

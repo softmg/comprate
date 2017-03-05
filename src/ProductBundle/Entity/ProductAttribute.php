@@ -48,6 +48,13 @@ class ProductAttribute
     /**
      * @var string
      *
+     * @ORM\Column(name="min_value", type="integer", nullable=true)
+     */
+    private $minValue;
+
+    /**
+     * @var string
+     *
      * @ORM\Column(name="max_value", type="integer", nullable=true)
      */
     private $maxValue;
@@ -155,7 +162,21 @@ class ProductAttribute
         return $this->value;
     }
 
+    /**
+     * @return integer
+     */
+    public function getMinValue()
+    {
+        return $this->minValue;
+    }
 
+    /**
+     * @param integer $minValue
+     */
+    public function setMinValue($minValue)
+    {
+        $this->minValue = $minValue;
+    }
 
     /**
      * Set maxValue
