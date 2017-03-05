@@ -8,6 +8,7 @@
 namespace ParsingBundle\Service;
 
 use ParsingBundle\Entity\ParsingSite;
+use ProductBundle\Entity\Attribute;
 use ProductBundle\Entity\Product;
 use ProductBundle\Entity\ProductType;
 use Symfony\Component\DomCrawler\Crawler;
@@ -15,8 +16,9 @@ use Symfony\Component\DomCrawler\Crawler;
 class PcpartpickerParser extends BaseParser
 {
     protected $numPages = false;
+    protected $productType;
 
-    const SEARCH_URL = 'https://pcpartpicker.com/products/motherboard/fetch/?page=%s';
+    const SEARCH_URL = 'https://pcpartpicker.com/products/%s/fetch/?page=%s';
 
     /**
      * @return String
@@ -31,12 +33,20 @@ class PcpartpickerParser extends BaseParser
      */
     public function run()
     {
+        $this->productType = ProductType::VIDEOCARD;
+        
+
         $startPage = 1;
         $this->parsePage($startPage);
 
         for ($i = $startPage + 1; $i <= $this->numPages; $i++) {
             $this->parsePage($i);
         }
+    }
+    
+    protected function getSearchUrl($page)
+    {
+        return sprintf(self::SEARCH_URL, $this->productType, $page);
     }
 
     /**
@@ -82,7 +92,7 @@ class PcpartpickerParser extends BaseParser
         $crawlerPage->filter('a')->each(function ($node) {
             $productUrl= $node->getNode(0)->getAttribute('href');
             if (strpos($productUrl, '/product/') !== false) {
-                $product = $this->addProduct($node->text(), ProductType::MOTHERBOARD);
+                $product = $this->addProduct($node->text(), $this->productType);
                 if ($product) {
                     $this->saveProductInfo($product, $productUrl, true);
                 }
@@ -96,8 +106,7 @@ class PcpartpickerParser extends BaseParser
      */
     private function getPage($pageNum)
     {
-        $urlForRequest = sprintf(self::SEARCH_URL, $pageNum);
-
+        $urlForRequest = $this->getSearchUrl($pageNum);
         $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
         return $crawlerPage;

@@ -20,6 +20,7 @@ use phpDocumentor\Reflection\Types\Boolean;
 use ProductBundle\Entity\Attribute;
 use ProductBundle\Entity\Product;
 use ProductBundle\Entity\ProductAttribute;
+use ProductBundle\Entity\ProductType;
 use Symfony\Component\DomCrawler\Crawler;
 use \ForceUTF8\Encoding;
 use Doctrine\ORM\Query\Expr;
@@ -566,15 +567,17 @@ abstract class BaseParser
 
     /**
      * @param String $name
+     * @param ProductType $productType
      * @return ParsingAttributeInfo
      */
-    protected function addAttributeInfo($name)
+    protected function addAttributeInfo($name, $productType)
     {
         $attributeInfoRepo = $this->em->getRepository('ParsingBundle:ParsingAttributeInfo');
 
         $attributeInfo = $attributeInfoRepo->findOneBy([
             'name' => $name,
-            'site' => $this->getParserSite()
+            'site' => $this->getParserSite(),
+            'productType' => $productType
         ]);
 
         if (!$attributeInfo) {
@@ -582,6 +585,7 @@ abstract class BaseParser
 
             $attributeInfo->setName($name);
             $attributeInfo->setSite($this->getParserSite());
+            $attributeInfo->setProductType($productType);
 
             $this->em->persist($attributeInfo);
             $this->em->flush();
@@ -602,7 +606,7 @@ abstract class BaseParser
     protected function addAttributeToProduct($product, $name, $value, $forceUpdate = false)
     {
         $result = true;
-        $attributeInfo = $this->addAttributeInfo($name);
+        $attributeInfo = $this->addAttributeInfo($name, $product->getType());
 
         if ($attribute = $attributeInfo->getAttribute()) {
             $productAttributeRepo = $this->em->getRepository('ProductBundle:ProductAttribute');

@@ -18,8 +18,6 @@ class PcpartpickerProductInfoParser extends BaseParser
 {
     protected $numPages = false;
 
-    const SEARCH_URL = 'https://pcpartpicker.com/products/motherboard/fetch/?page=%s';
-
     /**
      * @return String
      */
@@ -68,6 +66,7 @@ class PcpartpickerProductInfoParser extends BaseParser
             $specHtml = $productPageCrawler->filter('.specs')->getNode(0)->textContent;
 
             $specAr = explode("\n", $specHtml);
+
             $specAr = array_filter($specAr, function ($element) use ($attributes) {
                 $element = trim($element);
                 if ($element && $element !== 'Specifications' && !in_array($element, $attributes)) {
@@ -89,12 +88,18 @@ class PcpartpickerProductInfoParser extends BaseParser
             $result = false;
             foreach ($attributes as $num => $attributeName) {
                 $attributeValue = $attributesValues[$num];
-                if ($attributeName == 'Memory Slots' && $explodeValues = explode('x', $attributeValue)) {
+                if ($product->getType()->getCode() === ProductType::MOTHERBOARD &&
+                    $attributeName == 'Memory Slots' &&
+                    $explodeValues = explode('x', $attributeValue)
+                ) {
                     $attributeValue = (int)$explodeValues[0];
                     $memoryFormFactor = trim($explodeValues[1]);
                 }
 
-                if ($attributeName == 'Memory Type' && $explodeValues = explode('-', $attributeValue)) {
+                if ($product->getType()->getCode() === ProductType::MOTHERBOARD &&
+                    $attributeName == 'Memory Type' &&
+                    $explodeValues = explode('-', $attributeValue)
+                ) {
                     $attributeValue = trim($explodeValues[0]);
                     $memoryFreq = trim($explodeValues[1]);
                 }
@@ -178,10 +183,12 @@ class PcpartpickerProductInfoParser extends BaseParser
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('pr_in')
             ->from('ParsingBundle:ParsingProductInfo', 'pr_in')
+            //->leftJoin('ProductBundle:Product', 'p', Expr\Join::WITH, 'pr_in.product=p')
             ->where('pr_in.isFail = :isFail')
             ->andWhere('pr_in.site = :site')
             ->setParameter(':isFail', true)
             ->setParameter(':site', $this->getParserSite())
+            //->setFirstResult(1500)
             //->orderBy('pr_in.id', 'DESC')
             ->getQuery()
             ->execute()

@@ -14,7 +14,8 @@ use Doctrine\ORM\Mapping as ORM;
 class ProductType
 {
     const MOTHERBOARD = 'motherboard';
-    
+    const VIDEOCARD = 'video-card';
+
     /**
      * @var int
      *

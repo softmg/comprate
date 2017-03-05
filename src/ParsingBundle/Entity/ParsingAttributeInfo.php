@@ -4,6 +4,7 @@ namespace ParsingBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use ProductBundle\Entity\Attribute;
+use ProductBundle\Entity\ProductType;
 
 /**
  * ParsingAttributeInfo
@@ -30,6 +31,13 @@ class ParsingAttributeInfo
      */
     private $attribute;
 
+    /**
+     * @var ProductType
+     *
+     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\ProductType")
+     * @ORM\JoinColumn(name="product_type_id", referencedColumnName="id")
+     */
+    private $productType;
 
     /**
      * @var ParsingSite
@@ -126,5 +134,21 @@ class ParsingAttributeInfo
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * @return \ProductBundle\Entity\ProductType
+     */
+    public function getProductType()
+    {
+        return $this->productType;
+    }
+
+    /**
+     * @param \ProductBundle\Entity\ProductType $productType
+     */
+    public function setProductType($productType)
+    {
+        $this->productType = $productType;
     }
 }
