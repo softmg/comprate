@@ -14,6 +14,7 @@ class ParsingSite
 {
     const YANDEX_MARKET = 'yandex_market';
     const PCPARTPICKER = 'pcpartpicker';
+    const BENCHMARK = 'benchmark';
 
     /**
      * @var int

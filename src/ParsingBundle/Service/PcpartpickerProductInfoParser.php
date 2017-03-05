@@ -145,11 +145,11 @@ class PcpartpickerProductInfoParser extends BaseParser
      */
     public function recognizeAndEnterCaptcha($crawler)
     {
-        $captchaCrawler = $crawler->filter('.form__captcha');
+        $captchaCrawler = $crawler->filter('.g-recaptcha iframe');
         if ($captchaCrawler->count()) {
             $this->dump(" CAPTCHA! Try to recognize captcha");
             
-            $this->addProxyIpCaptcha();
+            //$this->addProxyIpCaptcha();
 
             $this->saveCacheContent('captcha', $this->getCurrentClient()->getResponse()->getContent());
             $captchaText = false;
@@ -188,7 +188,7 @@ class PcpartpickerProductInfoParser extends BaseParser
             ->andWhere('pr_in.site = :site')
             ->setParameter(':isFail', true)
             ->setParameter(':site', $this->getParserSite())
-            //->setFirstResult(1500)
+            //->setFirstResult(400)
             //->orderBy('pr_in.id', 'DESC')
             ->getQuery()
             ->execute()
