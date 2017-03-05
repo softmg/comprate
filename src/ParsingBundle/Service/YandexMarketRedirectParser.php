@@ -98,12 +98,18 @@ class YandexMarketRedirectParser extends YandexMarketParser
      */
     protected function getProductsForFirstParsing()
     {
+        //$productRepo = $this->em->getRepository('ProductBundle:Product');
+        //$product = $productRepo->find(1166);
+
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('pr_in')
             ->from('ParsingBundle:ParsingProductInfo', 'pr_in')
             ->leftJoin('ProductBundle:Product', 'p', Expr\Join::WITH, 'pr_in.product=p')
             ->where('pr_in.url LIKE :redirUrl')
+            //->andWhere('pr_in.product = :product')
             ->setParameter(':redirUrl', '%redir%')
+            //->setParameter(':product', $product)
+            ->orderBy('pr_in.updatedAt', 'DESC')
             ->getQuery()
             ->execute()
         ;

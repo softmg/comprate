@@ -140,7 +140,7 @@ class Product
     /**
      * Set type
      *
-     * @param integer $type
+     * @param ProductType $type
      *
      * @return Product
      */

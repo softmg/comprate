@@ -83,6 +83,9 @@ abstract class BaseParser
     /** @var Bool */
     private $notTryAgainAfterFail = false;
 
+    /** @var  String */
+    private $response;
+
     /**
      * @param \Doctrine\ORM\EntityManager $em
      * @param ProxyList $proxyList
@@ -293,6 +296,7 @@ abstract class BaseParser
                 $crawler = $this->checkAndEnterCaptcha($crawler);
             }
             $response = $client->getResponse();
+            $this->response = $response->getContent();
 
             /* if success response => save content to cache */
             if ($crawler && $this->checkSuccessResponse($response)) {
@@ -389,6 +393,7 @@ abstract class BaseParser
 
             /* make sure we have utf-8 encoding file */
             $file = Encoding::toUTF8($file);
+            $this->response = $file;
             if ($file) {
                 $crawler = new Crawler();
                 $crawler->addHtmlContent($file, 'UTF-8');
@@ -760,7 +765,6 @@ abstract class BaseParser
     protected function clearUrl($url, $clearQuery = true)
     {
         $url = $this->checkUrlScheme($url);
-
         if (strpos($url, 'http') === false) {
             $url = $this->getParserSite()->getUrl() . $url;
         }
@@ -780,7 +784,7 @@ abstract class BaseParser
     protected function getUrlWithoutQuery($url)
     {
         if ($urlParse = @parse_url($url)) {
-            $url = "{$urlParse['scheme']}:{$urlParse['host']}{$urlParse['path']}";
+            $url = "{$urlParse['scheme']}://{$urlParse['host']}{$urlParse['path']}";
         }
 
         return $url;
@@ -831,5 +835,39 @@ abstract class BaseParser
     protected function setNotTryAgainAfterFail($notTryAgainAfterFail)
     {
         $this->notTryAgainAfterFail = $notTryAgainAfterFail;
+    }
+
+    protected function getResponse()
+    {
+        return $this->response;
+    }
+
+    /**
+     * @param String
+     * @param String
+     * @return Product
+     */
+    protected function addProduct($name, $typeCode)
+    {
+        $product = null;
+        $productTypeRepo = $this->em->getRepository('ProductBundle:ProductType');
+
+        if ($productType = $productTypeRepo->findOneBy(['code' => $typeCode])) {
+            $productRepo = $this->em->getRepository('ProductBundle:Product');
+
+            $product = $productRepo->findOneBy(['name' => $name, 'type' => $productType]);
+            if (!$product) {
+                $product = new Product();
+                $product->setName($name);
+                $product->setType($productType);
+
+                $this->em->persist($product);
+                $this->em->flush();
+
+                $this->dump("add new $typeCode id:{$product->getId()}");
+            }
+        }
+
+        return $product;
     }
 }

@@ -13,6 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class ProductType
 {
+    const MOTHERBOARD = 'motherboard';
+    
     /**
      * @var int
      *
