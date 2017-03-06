@@ -1,1 +1,11 @@
-Hello World!
+<div id="detect-mobile" style="font-size: 36px;">...</div>
+<script type="text/javascript" src="http://wurfl.io/wurfl.js"></script>
+<script>
+    if (WURFL.is_mobile === true && WURFL.form_factor === "Smartphone") {
+        document.getElementById('detect-mobile').innerHTML = 'Ваш смартфон: ' + WURFL.complete_device_name;
+    } else if (WURFL.is_mobile === true) {
+        document.getElementById('detect-mobile').innerHTML = 'Ваш планшет: ' + WURFL.complete_device_name;
+    } else {
+        document.getElementById('detect-mobile').innerHTML = 'У Вас компьютер';
+    }
+</script>

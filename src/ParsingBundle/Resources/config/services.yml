@@ -54,6 +54,16 @@ services:
             - "@parsing.proxy_list"
             - "%parsing.cache_dir%"
             - "%rucaptcha_token%"
+            - "%proxy_userpasswd%"
+            - "%parsing.phantom_dir%/yandex_market.js"
+
+    parsing.benchmark:
+        class: ParsingBundle\Service\BenchmarkParser
+        arguments:
+            - "@doctrine.orm.entity_manager"
+            - "@parsing.proxy_list"
+            - "%parsing.cache_dir%"
+            - "%rucaptcha_token%"
             - ""
             - ""
 

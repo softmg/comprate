@@ -30,7 +30,7 @@ use Symfony\Component\Finder\SplFileInfo;
 abstract class BaseParser
 {
     const PRODUCT_ACTUALITY = 100;
-    protected static $sleepBeforeSecondRequest = [2, 4];
+    protected static $sleepBeforeSecondRequest = [0, 1];
     protected static $attributeValueReplacements = [
         'есть' => true,
         'нет' => false,
