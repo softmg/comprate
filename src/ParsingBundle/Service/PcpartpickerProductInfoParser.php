@@ -151,7 +151,6 @@ class PcpartpickerProductInfoParser extends BaseParser
         return true;
     }
 
-
     /**
      * @param Crawler $crawler
      * @return Crawler

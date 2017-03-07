@@ -18,7 +18,8 @@ class ProductType
     const MOBILE_ANDROID = 'mobile-android';
     const MOBILE_IOS = 'mobile-ios';
     const MEMORY = 'memory';
-    
+    const STORAGE = 'internal-hard-drive';
+
     /**
      * @var int
      *

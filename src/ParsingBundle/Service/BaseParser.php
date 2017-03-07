@@ -36,7 +36,8 @@ abstract class BaseParser
         'нет' => false,
         'да' => true,
         'Yes' => true,
-        'No' => false
+        'No' => false,
+        'N/A' => false
     ];
 
     protected static $attributeMeasReplacements = [

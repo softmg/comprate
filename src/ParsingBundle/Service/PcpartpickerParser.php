@@ -33,10 +33,10 @@ class PcpartpickerParser extends BaseParser
      */
     public function run()
     {
-        $this->productType = ProductType::MEMORY;
+        $this->productType = ProductType::STORAGE;
         
 
-        $startPage = 34;
+        $startPage = 1;
         $this->parsePage($startPage);
 
         for ($i = $startPage + 1; $i <= $this->numPages; $i++) {
