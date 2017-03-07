@@ -17,7 +17,8 @@ class ProductType
     const VIDEOCARD = 'video-card';
     const MOBILE_ANDROID = 'mobile-android';
     const MOBILE_IOS = 'mobile-ios';
-
+    const MEMORY = 'memory';
+    
     /**
      * @var int
      *

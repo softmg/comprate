@@ -41,7 +41,8 @@ abstract class BaseParser
 
     protected static $attributeMeasReplacements = [
         'Гб' => ['gb'],
-        'МГц' => ['MHz']
+        'МГц' => ['MHz'],
+        'В' => ['V']
     ];
 
     /** @var  EntityManager */
@@ -669,6 +670,10 @@ abstract class BaseParser
             $value = trim(str_replace($search, '', $value));
         }
 
+        if ($value === false) {
+            $value = 0;
+        }
+        
         $this->checkAttributeValueFromExists($attribute, $value);
 
         $productAttribute->setValue($value);
@@ -863,9 +868,10 @@ abstract class BaseParser
     /**
      * @param String
      * @param String
+     * @param Bool
      * @return Product
      */
-    protected function addProduct($name, $typeCode)
+    protected function addProduct($name, $typeCode, $force = false)
     {
         $product = null;
         $productTypeRepo = $this->em->getRepository('ProductBundle:ProductType');
@@ -874,7 +880,13 @@ abstract class BaseParser
             $productRepo = $this->em->getRepository('ProductBundle:Product');
 
             $product = $productRepo->findOneBy(['name' => $name, 'type' => $productType]);
-            if (!$product) {
+            if ($product && $force) {
+                $name = $name . '_';
+                while ($product = $productRepo->findOneBy(['name' => $name, 'type' => $productType])) {
+                    $name = $name . '_';
+                }
+            }
+            if (!$product || $force) {
                 $product = new Product();
                 $product->setName($name);
                 $product->setType($productType);

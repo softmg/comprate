@@ -33,10 +33,10 @@ class PcpartpickerParser extends BaseParser
      */
     public function run()
     {
-        $this->productType = ProductType::VIDEOCARD;
+        $this->productType = ProductType::MEMORY;
         
 
-        $startPage = 1;
+        $startPage = 34;
         $this->parsePage($startPage);
 
         for ($i = $startPage + 1; $i <= $this->numPages; $i++) {
@@ -92,7 +92,7 @@ class PcpartpickerParser extends BaseParser
         $crawlerPage->filter('a')->each(function ($node) {
             $productUrl= $node->getNode(0)->getAttribute('href');
             if (strpos($productUrl, '/product/') !== false) {
-                $product = $this->addProduct($node->text(), $this->productType);
+                $product = $this->addProduct($node->text(), $this->productType, true);
                 if ($product) {
                     $this->saveProductInfo($product, $productUrl, true);
                 }

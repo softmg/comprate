@@ -15,6 +15,7 @@ class Attribute
 {
     const MOTH_MEMORY_FREQ = 'moth_memory_freq';
     const MOTH_MEMORY_FORM_FACTOR = 'moth_memory_form_factor';
+    const MOTH_MEMORY_TYPE = 'moth_memory_type';
 
     /**
      * @var int

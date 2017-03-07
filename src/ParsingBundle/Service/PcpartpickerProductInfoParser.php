@@ -85,6 +85,7 @@ class PcpartpickerProductInfoParser extends BaseParser
 
             $memoryFreq = '';
             $memoryFormFactor = '';
+            $memoryType = '';
             $result = false;
             foreach ($attributes as $num => $attributeName) {
                 $attributeValue = $attributesValues[$num];
@@ -104,6 +105,14 @@ class PcpartpickerProductInfoParser extends BaseParser
                     $memoryFreq = trim($explodeValues[1]);
                 }
 
+                if ($product->getType()->getCode() === ProductType::MEMORY &&
+                    $attributeName == 'Speed' &&
+                    $explodeValues = explode('-', $attributeValue)
+                ) {
+                    $memoryType = trim($explodeValues[0]);
+                    $attributeValue = trim($explodeValues[1]);
+                }
+
                 if ($this->addAttributeToProduct($product, $attributeName, $attributeValue)) {
                     $result = true;
                 }
@@ -121,6 +130,10 @@ class PcpartpickerProductInfoParser extends BaseParser
 
             if ($memoryFormFactor) {
                 $this->addAttributeToProduct($product, Attribute::MOTH_MEMORY_FORM_FACTOR, $memoryFormFactor);
+            }
+
+            if ($memoryType) {
+                $this->addAttributeToProduct($product, Attribute::MOTH_MEMORY_TYPE, $memoryType);
             }
 
             $this->em->persist($product);
@@ -188,7 +201,7 @@ class PcpartpickerProductInfoParser extends BaseParser
             ->andWhere('pr_in.site = :site')
             ->setParameter(':isFail', true)
             ->setParameter(':site', $this->getParserSite())
-            //->setFirstResult(400)
+            //->setFirstResult(1000)
             //->orderBy('pr_in.id', 'DESC')
             ->getQuery()
             ->execute()
