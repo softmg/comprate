@@ -532,16 +532,25 @@ abstract class BaseParser
             $productInfo->setSite($this->getParserSite());
         }
 
+        $changed = false;
         if ($productUrl) {
             $productUrl = $this->clearUrl($productUrl, false);
+            if ($productInfo->getUrl() !== $productUrl) {
+                $changed = true;
+            }
             $productInfo->setUrl($productUrl);
         }
         $productInfo->setIsFail($isFail);
+        if ($isFail !== $productInfo->getIsFail()) {
+            $changed = true;
+        }
 
-        $this->em->persist($productInfo);
-        $this->em->flush();
+        if ($changed) {
+            $this->em->persist($productInfo);
+            $this->em->flush();
 
-        $this->dump(" save product info for id: {$product->getId()}");
+            $this->dump(" save product info for id: {$product->getId()}");
+        }
     }
 
     /**

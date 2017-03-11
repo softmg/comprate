@@ -13,13 +13,18 @@ use ProductBundle\Entity\Product;
 use ProductBundle\Entity\ProductType;
 use Symfony\Component\DomCrawler\Crawler;
 
-class BenchmarkParser extends BaseParser
+class BenchmarkSearchParser extends BaseParser
 {
     protected $productType;
 
-    const PARSER_PAGES = [
-        ProductType::MOBILE_ANDROID => 'http://www.androidbenchmark.net/passmark_chart.html',
-        ProductType::MOBILE_IOS => 'http://www.iphonebenchmark.net/passmark_chart.html',
+    const SEARCH_URL = 'https://www.passmark.com/search/zoomsearch.php?zoom_sort=0&zoom_xml=0&zoom_query=<searchText>&zoom_per_page=10&zoom_and=1&zoom_cat%5B%5D=5';
+    const PRODUCTS_PAGE_TYPE = [
+        ProductType::CPU => 'http://www.cpubenchmark.net/cpu.php',
+        ProductType::VIDEOCARD => 'http://www.videocardbenchmark.net/gpu.php',
+        ProductType::STORAGE => 'http://www.harddrivebenchmark.net/hdd.php',
+        ProductType::MEMORY => 'http://www.memorybenchmark.net/ram.php',
+        ProductType::MOBILE_ANDROID => 'http://www.androidbenchmark.net/phone.php',
+        ProductType::MOBILE_IOS => 'http://www.iphonebenchmark.net/phone.php',
     ];
 
     /**
@@ -35,14 +40,43 @@ class BenchmarkParser extends BaseParser
      */
     public function run()
     {
-        $this->productType = ProductType::MOBILE_ANDROID;
+        $productRepo = $productTypeRepo = $this->em->getRepository('ProductBundle:Product');
+        $product = $productRepo->find('3982');
 
-        $this->parsePage($this->getSearchUrl());
+        $this->findProduct($product);
     }
-    
-    protected function getSearchUrl()
+
+    /**
+     * @param Product $product
+     * @return mixed
+     */
+    protected function findProduct($product)
     {
-        return self::PARSER_PAGES[$this->productType];
+        $productInfoRepo = $this->em->getRepository('ParsingBundle:ParsingProductInfo');
+        $productInfo = $productInfoRepo->find(6);
+        $productInfo->setIsFail(1);
+        $this->em->persist($productInfo);
+        $this->em->flush();
+        var_dump(count(1)); exit;
+        $crawlerPage = $this->getCrawlerPage($this->getSerchUrl($product->getName()));
+
+        $results = $crawlerPage->filter('.result_title a');
+
+        if ($results) {
+            foreach ($results as $result) {
+                $productUrl = $result->getNode(0)->getAttribute('href');
+                if ($productUrl) {
+                    $crawlerPage = $this->getCrawlerPage($productUrl);
+
+
+                }
+            }
+        }
+    }
+
+    private function getSerchUrl($productName)
+    {
+        return str_replace('<searchText>', $productName, self::SEARCH_URL);
     }
 
     /**

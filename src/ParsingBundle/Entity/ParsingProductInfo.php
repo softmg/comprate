@@ -10,6 +10,7 @@ use ProductBundle\Entity\Product;
  *
  * @ORM\Table(name="parsing_product_info")
  * @ORM\Entity(repositoryClass="ParsingBundle\Repository\ParsingProductInfoRepository")
+ * @ORM\HasLifecycleCallbacks()
  */
 class ParsingProductInfo
 {
@@ -205,5 +206,14 @@ class ParsingProductInfo
     public function setUpdatedAt($updatedAt)
     {
         $this->updatedAt = $updatedAt;
+    }
+
+    /**
+     * @ORM\PrePersist()
+     * @ORM\PreUpdate()
+     */
+    public function updateModifiedDatetime()
+    {
+        $this->setUpdatedAt(new \DateTime());
     }
 }

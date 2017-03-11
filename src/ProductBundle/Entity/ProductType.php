@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class ProductType
 {
+    const CPU = 'cpu';
     const MOTHERBOARD = 'motherboard';
     const VIDEOCARD = 'video-card';
     const MOBILE_ANDROID = 'mobile-android';
