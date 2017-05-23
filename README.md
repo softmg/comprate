@@ -31,6 +31,11 @@ php bin/console doctrine:database:create --env=acceptance
 mysql -u<db_user> -p<db_pass> <db_name>_acceptance < ./data/comprate.sql
 php bin/console doctrine:schema:update --force --env=acceptance
 ```
+Если ошибка при миграции, то запускаем следующие команды:
+```bash
+php bin/console doctrine:schema:update --dump-sql > migrate.sql
+cat <(echo "SET FOREIGN_KEY_CHECKS=0;") migrate.sql | mysql -uroot <db_name>
+```
 
 ###Установить права для директорий
 ```bash
