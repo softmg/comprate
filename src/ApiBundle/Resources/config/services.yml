@@ -4,3 +4,19 @@ services:
         class: ApiBundle\DataTransformer\ProductDataTransformer
         arguments:
             - "@doctrine.orm.entity_manager"
+
+    request_object_handler:
+        class: ApiBundle\RequestObject\RequestObjectHandler
+        autowire: true
+
+    api.console_command_listener:
+        class: ApiBundle\Event\ConsoleCommandListener
+        autowire: true
+        tags:
+            - {name: kernel.event_listener, event: console.command}
+
+    app.converter.request_objects:
+            class: ApiBundle\RequestObject\RequestObjectConverter
+            arguments: ['@request_object_handler']
+            tags:
+                - {name: request.param_converter, priority: 1, converter: 'request_objects'}

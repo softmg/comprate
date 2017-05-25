@@ -16,3 +16,5 @@
 !var/parser/.gitkeep
 /vendor/
 /web/bundles/
+/bin/
+!/bin/console

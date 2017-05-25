@@ -7,6 +7,7 @@
  */
 namespace ParsingBundle\Service;
 
+use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -32,17 +33,13 @@ class AvitoParser extends BaseParser
         $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
         $products = $crawlerPage->filter('.item')
-            ->each(function ($node) {
+            ->each(function (Crawler $node) {
                 $title = trim($node->filter('h3 a')->first()->text());
                 $url = $node->filter('h3 a')->getNode(0)->getAttribute('href');
                 $price = preg_replace('/^\s+([\d\s]*?)\s+руб.*?$/s', '$1', $node->filter('.about')->first()->text());
-                $price = str_replace(' ', '', $price);
+                $price = (int)str_replace(' ', '', $price);
 
-                return [
-                    'title' => $title,
-                    'url' => $url,
-                    'price' => $price
-                ];
+                return new ParsingProductInfo($url, $title, $price);
             });
 
         return $products;

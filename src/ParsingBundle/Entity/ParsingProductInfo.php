@@ -2,6 +2,7 @@
 
 namespace ParsingBundle\Entity;
 
+use ApiBundle\RequestObject\ProductInfoRequest;
 use Doctrine\ORM\Mapping as ORM;
 use ProductBundle\Entity\Product;
 
@@ -69,9 +70,17 @@ class ParsingProductInfo
 
     /**
      * ParsingProductInfo constructor.
+     *
+     * @param string $url
+     * @param string $title
+     * @param int $price
+     * @param string $site
      */
-    public function __construct()
+    public function __construct(ProductInfoRequest $request)
     {
+        $this->url = $request->url;
+//        $this->site = $site;
+
         $this->setUpdatedAt(new \DateTime('now'));
         if (!$this->getCreatedAt()) {
             $this->setCreatedAt(new \DateTime('now'));
