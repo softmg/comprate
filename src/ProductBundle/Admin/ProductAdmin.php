@@ -6,8 +6,6 @@ use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Show\ShowMapper;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-
 
 class ProductAdmin extends AbstractAdmin
 {
@@ -18,18 +16,19 @@ class ProductAdmin extends AbstractAdmin
             ->add('name', 'text', array(
                 'label' => 'Название'
             ))
-            ->add('vendor', EntityType::class, [
-                'label' => 'Производитель',
-                'class' => 'ProductBundle:Vendor',
-                'choice_label' => 'name',
-                'required' => true,
-                'multiple' => false,
-                'expanded' => true
-            ])->end()->with('productAttributes')->add('productAttributes', 'sonata_type_collection', ['by_reference' => false],[
+            ->add('type', null, [
+                'label' => 'Тип'
+            ])
+            ->end()
+            ->with('productAttributes')->add('productAttributes',
+                'sonata_type_collection',
+                [
+                    'by_reference' => false
+                ], [
                     'edit' => 'inline',
                     'inline' => 'table',
                     'sortable' => 'name',
-                ])
+            ])
         ;
     }
 
@@ -37,8 +36,8 @@ class ProductAdmin extends AbstractAdmin
     protected function configureDatagridFilters(DatagridMapper $datagridMapper)
     {
         $datagridMapper
-            ->add('name')
-            ->add('vendor')
+            ->add('name', null, ['show_filter' => true])
+            ->add('type', null, ['show_filter' => true])
         ;
     }
 
@@ -47,7 +46,7 @@ class ProductAdmin extends AbstractAdmin
     {
         $listMapper
             ->addIdentifier('name')
-            ->add('vendor')
+            ->add('type')
             ->add("ProductAttributesString")
         ;
     }
@@ -61,6 +60,4 @@ class ProductAdmin extends AbstractAdmin
             ->add('attributes')
         ;
     }
-
-
 }

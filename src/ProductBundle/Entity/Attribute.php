@@ -164,6 +164,25 @@ class Attribute
     }
 
     /**
+     * @return string
+     */
+    public function getProductTypesString()
+    {
+        $productTypesString = '';
+
+        foreach ($this->getProductTypes() as $type) {
+            $productTypesString .= ', ' . $type->getName();
+        }
+
+        return substr($productTypesString, 2);
+    }
+
+    public function getNameWithProductType()
+    {
+        return $this->getName() . " ({$this->getProductTypesString()})";
+    }
+
+    /**
      * Set value
      *
      * @param ProductType $productType
