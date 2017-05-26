@@ -98,3 +98,18 @@ services:
             - "%rucaptcha_token%"
             - "%proxy_userpasswd%"
             - ""
+            - "@repo.parsing_product_info"
+            - "@request_object_handler"
+            - "@repo.parsing_site"
+
+    repo.parsing_product_info:
+        class: Doctrine\ORM\EntityRepository
+        factory: ['@doctrine.orm.default_entity_manager', getRepository]
+        arguments:
+            - ParsingBundle\Entity\ParsingProductInfo
+
+    repo.parsing_site:
+        class: Doctrine\ORM\EntityRepository
+        factory: ['@doctrine.orm.default_entity_manager', getRepository]
+        arguments:
+            - ParsingBundle\Entity\ParsingSite

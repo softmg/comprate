@@ -25,6 +25,12 @@ class ParsingProductInfo
     private $id;
 
     /**
+     * @ORM\Column(name="id_on_site", type="string", unique=true)
+     * @var string
+     */
+    private $idOnSite;
+
+    /**
      * @var Product
      *
      * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product")
@@ -35,7 +41,7 @@ class ParsingProductInfo
     /**
      * @var ParsingSite
      *
-     * @ORM\ManyToOne(targetEntity="ParsingSite")
+     * @ORM\ManyToOne(targetEntity="ParsingSite", cascade={"persist"})
      * @ORM\JoinColumn(name="site_id", referencedColumnName="id")
      */
     private $site;
@@ -71,20 +77,12 @@ class ParsingProductInfo
     /**
      * ParsingProductInfo constructor.
      *
-     * @param string $url
-     * @param string $title
-     * @param int $price
-     * @param string $site
+     * @param ProductInfoRequest $request
      */
     public function __construct(ProductInfoRequest $request)
     {
-        $this->url = $request->url;
-//        $this->site = $site;
-
-        $this->setUpdatedAt(new \DateTime('now'));
-        if (!$this->getCreatedAt()) {
-            $this->setCreatedAt(new \DateTime('now'));
-        }
+        $this->updateBaseInfo($request);
+        $this->setCreatedAt(new \DateTime('now'));
     }
 
     /**
@@ -224,5 +222,14 @@ class ParsingProductInfo
     public function updateModifiedDatetime()
     {
         $this->setUpdatedAt(new \DateTime());
+    }
+
+    public function updateBaseInfo(ProductInfoRequest $request)
+    {
+        $this->url = $request->url;
+        $this->idOnSite = $request->idOnSite;
+        $this->isFail = $request->isFail;
+
+        $this->updateModifiedDatetime();
     }
 }

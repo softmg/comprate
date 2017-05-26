@@ -1,6 +1,6 @@
 <?php
 
-namespace ApiBundle\Event;
+namespace ApiBundle\Middleware;
 
 
 use ApiBundle\RequestObject\CommandRequestInjector;

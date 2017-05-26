@@ -43,7 +43,7 @@ class RunParserCommand extends ContainerAwareCommand
 
         if (!$parser) {
             $output->writeln("Parser with site_code $siteCode not found");
-            exit;
+            return;
         }
         
         $parser->run();

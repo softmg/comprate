@@ -310,7 +310,7 @@ abstract class BaseParser
             $this->response = $response->getContent();
 
             /* if success response => save content to cache */
-            if ($crawler && $this->checkSuccessResponse($response)) {
+            if ($crawler && $this->checkSuccessResponse($response) && $crawler->getUri() !== 'https://www.avito.ru/blocked') {
                 $this->dump(" page $pageUrl success! Save it to cache {$this->getCacheFileName($pageUrl)}");
                 if ($this->proxyIp) {
                     $this->proxyList->addProxyIpSuccess($this->proxyIp);
