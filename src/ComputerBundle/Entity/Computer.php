@@ -2,6 +2,7 @@
 
 namespace ComputerBundle\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -41,8 +42,24 @@ class Computer
      * @ORM\Column(name="user_ip", type="string", length=255, nullable=true)
      */
     private $userIp;
-
-
+    
+    
+    /**
+     * @var \ProductBundle\Entity\Product[]
+     * @ORM\ManyToMany(targetEntity="\ProductBundle\Entity\Product", inversedBy="computers")
+     * @ORM\JoinTable(name="computer_products")
+     */
+    private $products;
+    
+    /**
+     * Computer constructor.
+     */
+    public function __construct()
+    {
+        $this->products = $products = new ArrayCollection();
+    }
+    
+    
     /**
      * Get id
      *
@@ -124,5 +141,48 @@ class Computer
     {
         return $this->userIp;
     }
+    
+    /**
+     * @return \ProductBundle\Entity\Product[]
+     */
+    public function getProducts()
+    {
+        return $this->products;
+    }
+    
+    /**
+     * @param \ProductBundle\Entity\Product[] $products
+     */
+    public function setProducts($products)
+    {
+        $this->products = $products;
+    }
+    
+    /**
+     * @param \ProductBundle\Entity\Product $product
+     *
+     * @return Computer
+     */
+    public function addProduct($product)
+    {
+        if (!$this->products->contains($product)) {
+            $this->products->add($product);
+        }
+        
+        return $this;
+    }
+    
+    /**
+     * @param \ProductBundle\Entity\Product $product
+     *
+     * @return Computer
+     */
+    public function removeProduct($product)
+    {
+        if ($this->products->contains($product)) {
+            $this->products->remove($product);
+        }
+        
+        return $this;
+    }
 }
-
