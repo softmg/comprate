@@ -54,6 +54,13 @@ class Attribute
      * @ORM\Column(name="max_value", type="integer", nullable=true)
      */
     private $maxValue;
+    
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="is_required", type="boolean", nullable=true)
+     */
+    private $isRequired = false;
 
     /**
      * @var string
@@ -148,7 +155,7 @@ class Attribute
     }
 
     /**
-     * @return \ProductBundle\Entity\ProductType[]
+     * @return ArrayCollection
      */
     public function getProductTypes()
     {
@@ -211,7 +218,7 @@ class Attribute
     }
 
     /**
-     * @return \ProductBundle\Entity\AttributeValue[]
+     * @return ArrayCollection
      */
     public function getValues()
     {
@@ -284,6 +291,22 @@ class Attribute
     public function setMaxValue($maxValue)
     {
         $this->maxValue = $maxValue;
+    }
+    
+    /**
+     * @return bool
+     */
+    public function isRequired()
+    {
+        return $this->isRequired;
+    }
+    
+    /**
+     * @param bool $isRequired
+     */
+    public function setIsRequired($isRequired)
+    {
+        $this->isRequired = $isRequired;
     }
 
     /**

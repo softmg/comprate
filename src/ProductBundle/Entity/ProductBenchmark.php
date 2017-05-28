@@ -8,10 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * Product
  *
- * @ORM\Table(name="product")
- * @ORM\Entity(repositoryClass="ProductBundle\Repository\ProductRepository")
+ * @ORM\Table(name="product_benchmark")
+ * @ORM\Entity(repositoryClass="ProductBundle\Repository\ProductBenchmarkRepository")
  */
-class Product
+class ProductBenchmark
 {
     /**
      * @var int
@@ -46,42 +46,26 @@ class Product
     private $type;
 
     /**
+     * @var int
+     *
+     * @ORM\Column(name="rate", type="integer", nullable=true)
+     */
+    private $rate;
+
+    /**
      * @var string
      *
-     * @ORM\Column(name="price", type="decimal", precision=10, scale=2, nullable=true)
+     * @ORM\Column(name="rateInfo", type="string", length=255, nullable=true)
      */
-    private $price;
-
+    private $rateInfo;
+    
     /**
-     * @var string
+     * @var Product
      *
-     * @ORM\Column(name="is_actual", type="boolean", nullable=true)
+     * @ORM\OneToOne(targetEntity="Product", inversedBy="productBenchmark")
+     * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      */
-    private $isActual = true;
-
-    /**
-     * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="product", cascade={"persist"})
-     */
-    private $productAttributes;
-    
-    /**
-     * @ORM\OneToOne(targetEntity="ProductBenchmark", mappedBy="product")
-     */
-    private $productBenchmark;
-    
-    /**
-     * @ORM\OneToMany(targetEntity="AvitoOffer", mappedBy="product")
-     */
-    private $avitoOffers;
-
-    /**
-     * Product constructor.
-     */
-    public function __construct()
-    {
-        $this->productAttributes = new ArrayCollection();
-        $this->avitoOffers = new ArrayCollection();
-    }
+    private $product;
 
     /**
      * Get id
@@ -98,7 +82,7 @@ class Product
      *
      * @param string $name
      *
-     * @return Product
+     * @return ProductBenchmark
      */
     public function setName($name)
     {
@@ -122,7 +106,7 @@ class Product
      *
      * @param Vendor $vendor
      *
-     * @return Product
+     * @return ProductBenchmark
      */
     public function setVendor($vendor)
     {
@@ -146,7 +130,7 @@ class Product
      *
      * @param ProductType $type
      *
-     * @return Product
+     * @return ProductBenchmark
      */
     public function setType($type)
     {
@@ -164,13 +148,85 @@ class Product
     {
         return $this->type;
     }
+    
+    /**
+     * Set product
+     *
+     * @param Product $product
+     *
+     * @return ProductBenchmark
+     */
+    public function setProduct($product)
+    {
+        $this->product = $product;
+        
+        return $this;
+    }
+    
+    /**
+     * Get product
+     *
+     * @return Product
+     */
+    public function getProduct()
+    {
+        return $this->product;
+    }
+
+    /**
+     * Set rate
+     *
+     * @param integer $rate
+     *
+     * @return ProductBenchmark
+     */
+    public function setRate($rate)
+    {
+        $this->rate = $rate;
+
+        return $this;
+    }
+
+    /**
+     * Get rate
+     *
+     * @return int
+     */
+    public function getRate()
+    {
+        return $this->rate;
+    }
+
+    /**
+     * Set rateInfo
+     *
+     * @param string $rateInfo
+     *
+     * @return ProductBenchmark
+     */
+    public function setRateInfo($rateInfo)
+    {
+        $this->rateInfo = $rateInfo;
+
+        return $this;
+    }
+
+    /**
+     * Get rateInfo
+     *
+     * @return string
+     */
+    public function getRateInfo()
+    {
+        return $this->rateInfo;
+    }
 
     /**
      * Set price
      *
      * @param string $price
      *
-     * @return Product
+     * @return ProductBenchmark
      */
     public function setPrice($price)
     {
@@ -225,10 +281,11 @@ class Product
         }
         return join(", ", $res);
     }
-    
+
+
     /**
      * @param ProductAttribute $productAttribute
-     * @return Product
+     * @return ProductBenchmark
      */
     public function addProductAttribute($productAttribute)
     {
@@ -243,49 +300,5 @@ class Product
     public function setProductAttributes($productAttributes)
     {
         $this->productAttributes = $productAttributes;
-    }
-    
-    /**
-     * @return mixed
-     */
-    public function getProductBenchmark()
-    {
-        return $this->productBenchmark;
-    }
-    
-    /**
-     * @param mixed $productBenchmark
-     */
-    public function setProductBenchmark($productBenchmark)
-    {
-        $this->productBenchmark = $productBenchmark;
-    }
-    
-    /**
-     * @return \ProductBundle\Entity\Product
-     */
-    public function getAvitoOffers()
-    {
-        return $this->avitoOffers;
-    }
-    
-    /**
-     * @param \ProductBundle\Entity\Product $avitoOffers
-     */
-    public function setAvitoOffers($avitoOffers)
-    {
-        $this->avitoOffers = $avitoOffers;
-    }
-    
-    /**
-     * @param AvitoOffer $avitoOffer
-     * @return Product
-     */
-    public function addAvitoOffer($avitoOffer)
-    {
-        $avitoOffer->setProduct($this);
-        $this->avitoOffers->add($avitoOffer);
-        
-        return $this;
     }
 }

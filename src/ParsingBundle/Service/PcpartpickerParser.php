@@ -33,7 +33,7 @@ class PcpartpickerParser extends BaseParser
      */
     public function run()
     {
-        $this->productType = ProductType::STORAGE;
+        $this->productType = ProductType::CPU;
         
 
         $startPage = 1;
