@@ -45,18 +45,18 @@ class ParsingProductInfoRepository extends BaseRepo
         return (int)$qb->getQuery()->getSingleScalarResult();
     }
 
-    public function findProductsToHandle(ParsingSite $site)
+    public function unhandledProductsQB(ParsingSite $site)
     {
         $qb = $this->createQueryBuilder('p');
 
         $qb->where('p.site = :site');
-        $qb->andWhere('p.isFail = false OR p.updatedAt > :updatedAt');
+        $qb->andWhere('p.isFail = true OR p.offerCreatedAt > :offerCreatedAt');
 
         $qb->setParameters([
             'site' => $site,
-            'updatedAt' => new \DateTime('-1 week'),
+            'offerCreatedAt' => new \DateTime('-1 week'),
         ]);
 
-
+        return $qb;
     }
 }

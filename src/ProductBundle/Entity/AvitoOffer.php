@@ -3,6 +3,7 @@
 namespace ProductBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use ParsingBundle\Entity\Price;
 
 /**
  * AvitoOffer
@@ -26,16 +27,16 @@ class AvitoOffer
     private $description;
     
     /**
-     * @var string
+     * @var string|Price
      *
-     * @ORM\Column(name="price", type="decimal", precision=10, scale=2, nullable=true)
+     * @ORM\Embedded(class="ParsingBundle\Entity\Price")
      */
     private $price;
     
     /**
-     * @var string
+     * @var string[]
      *
-     * @ORM\Column(name="photos", type="string", length=1000, nullable=true)
+     * @ORM\Column(name="photos", type="array", nullable=true)
      */
     private $photos;
     
@@ -53,6 +54,10 @@ class AvitoOffer
      */
     private $phone;
 
+    public function __construct()
+    {
+        $this->photos = [];
+    }
 
     /**
      * Set name
@@ -77,15 +82,15 @@ class AvitoOffer
     {
         return $this->name;
     }
-    
+
     /**
      * Set price
      *
-     * @param string $price
+     * @param Price|string $price
      *
      * @return AvitoOffer
      */
-    public function setPrice($price)
+    public function setPrice(Price $price = null)
     {
         $this->price = $price;
 
@@ -95,7 +100,7 @@ class AvitoOffer
     /**
      * Get price
      *
-     * @return string
+     * @return Price|null
      */
     public function getPrice()
     {
@@ -119,7 +124,7 @@ class AvitoOffer
     }
     
     /**
-     * @return string
+     * @return string[]
      */
     public function getPhotos()
     {
@@ -127,9 +132,9 @@ class AvitoOffer
     }
     
     /**
-     * @param string $photos
+     * @param string[] $photos
      */
-    public function setPhotos($photos)
+    public function setPhotos(array $photos = null)
     {
         $this->photos = $photos;
     }
@@ -164,5 +169,27 @@ class AvitoOffer
     public function setPhone($phone)
     {
         $this->phone = $phone;
+    }
+
+    public function addPhoto($photo)
+    {
+        $index = array_search($photo, $this->photos, true);
+
+        if (false === $index) {
+            return;
+        }
+
+        $this->photos[] = $photo;
+    }
+
+    public function removePhoto($photo)
+    {
+        $index = array_search($photo, $this->photos, true);
+
+        if (false === $index) {
+            return;
+        }
+
+        array_splice($this->photos, $index, 1);
     }
 }

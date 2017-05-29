@@ -8,6 +8,7 @@
 
 namespace ParsingBundle\Service;
 
+use ApiBundle\RequestObject\CreateAvitoOfferRequest;
 use ApiBundle\RequestObject\ProductInfoRequest;
 use ApiBundle\RequestObject\RequestObjectHandler;
 use Doctrine\ORM\EntityManager;
@@ -15,9 +16,11 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 use function GuzzleHttp\Psr7\parse_query;
 use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
+use ParsingBundle\Entity\Price;
 use ParsingBundle\Repository\ParsingProductInfoRepository;
 use ParsingBundle\Repository\ParsingSiteRepository;
 use ParsingBundle\RequestObjects\ParsingPaginator;
+use ProductBundle\Entity\AvitoOffer;
 use Symfony\Component\DomCrawler\Crawler;
 
 class AvitoParser extends BaseParser
@@ -84,12 +87,75 @@ class AvitoParser extends BaseParser
     public function run()
     {
         $this->parseOffersList('protsessory');
+//        $this->parseOffers();
     }
 
 
     public function parseOffers()
     {
-//        $this->productInfoRepo->
+
+        $offersIterator = $this->productInfoRepo->unhandledProductsQB($this->site)->getQuery()->iterate();
+
+        $index = 0;
+
+        foreach ($offersIterator as $row) {
+            ++$index;
+
+            /** @var ParsingProductInfo $offer */
+            $offer = $row[0];
+
+            $this->parseOffer($offer);
+
+            if ($index % 100 === 0) {
+                $this->em->flush();
+                $this->em->clear(ParsingProductInfo::class);
+            }
+        }
+
+        return true;
+    }
+
+    public function parseOffer(ParsingProductInfo $offer)
+    {
+        $url = $this->site->getUrl() . $offer->getUrl();
+        $page = $this->getCrawlerPage($url);
+
+        $title = $page->filter('.title-info-title-text');
+        $description = $page->filter('.item-description');
+        $price = $page->filter('.price-value');
+
+        if (0 === $title->count()) {
+            return false;
+        }
+
+        $createAvitoOfferRequest = new CreateAvitoOfferRequest();
+        $createAvitoOfferRequest->name = $title->text();
+        $createAvitoOfferRequest->description = $this->getNodeText($description);
+        $createAvitoOfferRequest->price = $this->parsePrice($price);
+//        $createAvitoOfferRequest->photos = ;
+
+        return true;
+    }
+
+    private function parsePrice(Crawler $crawler = null)
+    {
+        $value = $this->getNodeText($crawler->filter('.price-value-string'));
+        $currency = $this->getNodeText($crawler->filter('.font_arial-rub'));
+
+        if ($value) {
+            $value = (int)str_replace(' ', '', $value);
+        }
+
+        return new Price($value, null, $currency);
+    }
+
+    private function getNodeText(Crawler $node, $defaultValue = null, $trim = true)
+    {
+        if ($node->count() === 0) {
+            return $defaultValue;
+        }
+
+        return $trim ? trim($node->text()): $node->text();
     }
 
     /**

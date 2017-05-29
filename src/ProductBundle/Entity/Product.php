@@ -61,7 +61,7 @@ class Product
     private $isActual = true;
 
     /**
-     * @ORM\OneToMany(targetEntity="ProductAttribute", mappedBy="product", cascade={"persist"})
+     * @ORM\OneToMany(targetEntity="ProductBundle\Entity\ProductAttribute", mappedBy="product", cascade={"persist"})
      */
     private $productAttributes;
     

@@ -51,7 +51,7 @@ class ProductInfoRequest implements IRequestObject
 
     public function __construct()
     {
-        $this->isFail = false;
+        $this->isFail = true;
     }
 
     /**

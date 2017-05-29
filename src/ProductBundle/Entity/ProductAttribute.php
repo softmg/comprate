@@ -25,7 +25,7 @@ class ProductAttribute
     /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="Product", inversedBy="productAtributes")
+     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product", inversedBy="productAttributes")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      */
     private $product;

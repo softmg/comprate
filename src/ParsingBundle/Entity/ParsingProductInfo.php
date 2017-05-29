@@ -26,7 +26,7 @@ class ParsingProductInfo
     private $id;
 
     /**
-     * @ORM\Column(name="id_on_site", type="string", unique=true)
+     * @ORM\Column(name="id_on_site", type="string", unique=true, nullable=true, options={"default"=null})
      * @var string
      */
     private $idOnSite;
@@ -262,6 +262,7 @@ class ParsingProductInfo
         $this->url = $request->url;
         $this->idOnSite = $request->idOnSite;
         $this->isFail = $request->isFail;
+        $this->site = $request->site;
         $this->offerCreatedAt = $request->createdAt;
 
         $this->updateModifiedDatetime();
