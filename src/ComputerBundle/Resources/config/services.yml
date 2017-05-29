@@ -1,4 +1,3 @@
 services:
-    computer.create:
-        class: ComputerBundle\Service\Computer
-        arguments: ["@doctrine.orm.entity_manager"]
+    computer.builder:
+        class: ComputerBundle\Service\ComputerBuilder

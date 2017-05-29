@@ -59,10 +59,9 @@ class ProductAttributeAdmin extends AbstractAdmin
         );
 
         $formMapper
-            /*->add('attribute' , 'sonata_type_model_autocomplete', ['property' => 'name',
-                'to_string_callback' => function ($entity, $property) {
-                    return $entity->getName();
-                }])*/
+            ->add('attribute', 'sonata_type_model', [
+                'property' => 'nameWithProductType'
+            ])
             ->add('value')
             ->add('maxValue')
             ->add('maxNumber')
