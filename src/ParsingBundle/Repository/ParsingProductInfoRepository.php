@@ -3,6 +3,7 @@
 namespace ParsingBundle\Repository;
 
 use ParsingBundle\Entity\ParsingProductInfo;
+use ParsingBundle\Entity\ParsingSite;
 
 /**
  * ParsingProductInfoRepository
@@ -42,5 +43,20 @@ class ParsingProductInfoRepository extends BaseRepo
         $qb->select('count(p.idOnSite)');
 
         return (int)$qb->getQuery()->getSingleScalarResult();
+    }
+
+    public function findProductsToHandle(ParsingSite $site)
+    {
+        $qb = $this->createQueryBuilder('p');
+
+        $qb->where('p.site = :site');
+        $qb->andWhere('p.isFail = false OR p.updatedAt > :updatedAt');
+
+        $qb->setParameters([
+            'site' => $site,
+            'updatedAt' => new \DateTime('-1 week'),
+        ]);
+
+
     }
 }

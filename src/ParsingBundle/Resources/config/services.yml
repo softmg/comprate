@@ -101,6 +101,7 @@ services:
             - "@repo.parsing_product_info"
             - "@request_object_handler"
             - "@repo.parsing_site"
+            - "@avito_date_parser"
 
     repo.parsing_product_info:
         class: Doctrine\ORM\EntityRepository
@@ -113,3 +114,7 @@ services:
         factory: ['@doctrine.orm.default_entity_manager', getRepository]
         arguments:
             - ParsingBundle\Entity\ParsingSite
+
+    avito_date_parser:
+        class: ParsingBundle\Service\AvitoDateParser
+        autowire: true

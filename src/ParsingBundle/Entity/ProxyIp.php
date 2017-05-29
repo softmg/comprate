@@ -95,7 +95,7 @@ class ProxyIp
     /**
      * @var ParsingSite
      *
-     * @ORM\ManyToOne(targetEntity="ParsingSite", cascade={"persist"})
+     * @ORM\ManyToOne(targetEntity="ParsingSite")
      * @ORM\JoinColumn(name="parsing_site_id", referencedColumnName="id")
      */
     private $parsingSite;

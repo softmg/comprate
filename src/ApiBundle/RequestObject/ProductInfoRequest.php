@@ -44,6 +44,11 @@ class ProductInfoRequest implements IRequestObject
      */
     public $site;
 
+    /**
+     * @var \DateTime
+     */
+    public $createdAt;
+
     public function __construct()
     {
         $this->isFail = false;
@@ -108,6 +113,16 @@ class ProductInfoRequest implements IRequestObject
                     'reverseCheck' => true,
                 ])
             ],
+
+            'createdAt' => [
+                new NotBlank(['groups' => [
+                    'create',
+                ]]),
+
+                new InstanceOfConstraint([
+                    'className' => \DateTime::class,
+                ]),
+            ]
         ];
     }
 }

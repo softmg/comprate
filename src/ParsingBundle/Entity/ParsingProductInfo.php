@@ -4,6 +4,7 @@ namespace ParsingBundle\Entity;
 
 use ApiBundle\RequestObject\ProductInfoRequest;
 use Doctrine\ORM\Mapping as ORM;
+use ProductBundle\Entity\AvitoOffer;
 use ProductBundle\Entity\Product;
 
 /**
@@ -33,7 +34,7 @@ class ParsingProductInfo
     /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product")
+     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product", inversedBy="offers")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      */
     private $product;
@@ -41,7 +42,7 @@ class ParsingProductInfo
     /**
      * @var ParsingSite
      *
-     * @ORM\ManyToOne(targetEntity="ParsingSite", cascade={"persist"})
+     * @ORM\ManyToOne(targetEntity="ParsingSite")
      * @ORM\JoinColumn(name="site_id", referencedColumnName="id")
      */
     private $site;
@@ -73,6 +74,18 @@ class ParsingProductInfo
      * @ORM\Column(name="updated_at", type="datetime")
      */
     private $updatedAt;
+
+    /**
+     * @ORM\Column(type="datetime")
+     * @var \DateTime
+     */
+    private $offerCreatedAt;
+
+    /**
+     * @ORM\Embedded(class="ProductBundle\Entity\AvitoOffer")
+     * @var AvitoOffer
+     */
+    private $avitoOffer;
 
     /**
      * ParsingProductInfo constructor.
@@ -224,11 +237,32 @@ class ParsingProductInfo
         $this->setUpdatedAt(new \DateTime());
     }
 
+    /**
+     * @param AvitoOffer|null $offer
+     *
+     * @return self
+     */
+    public function setAvitoOffer(AvitoOffer $offer = null)
+    {
+        $this->avitoOffer = $offer;
+
+        return $this;
+    }
+
+    /**
+     * @return AvitoOffer|null
+     */
+    public function getAvitoOffer()
+    {
+        return $this->avitoOffer;
+    }
+
     public function updateBaseInfo(ProductInfoRequest $request)
     {
         $this->url = $request->url;
         $this->idOnSite = $request->idOnSite;
         $this->isFail = $request->isFail;
+        $this->offerCreatedAt = $request->createdAt;
 
         $this->updateModifiedDatetime();
     }

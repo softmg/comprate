@@ -50,6 +50,11 @@ class AvitoParser extends BaseParser
      */
     private $site;
 
+    /**
+     * @var AvitoDateParser
+     */
+    private $avitoDateParser;
+
     public function __construct(
         EntityManager $em,
         ProxyList $proxyList,
@@ -59,7 +64,8 @@ class AvitoParser extends BaseParser
         $phantomJsScriptPath,
         ParsingProductInfoRepository $productInfoRepo,
         RequestObjectHandler $requestObjectHandler,
-        ParsingSiteRepository $siteRepo
+        ParsingSiteRepository $siteRepo,
+        AvitoDateParser $avitoDateParser
     )
     {
         parent::__construct($em, $proxyList, $cache_dir, $rucaptcha_token, $proxy_userpasswd, $phantomJsScriptPath);
@@ -68,6 +74,7 @@ class AvitoParser extends BaseParser
         $this->requestObjectHandler = $requestObjectHandler;
         $this->siteRepo = $siteRepo;
         $this->site = $siteRepo->findOneBy(['name' => ParsingSite::AVITO]);
+        $this->avitoDateParser = $avitoDateParser;
     }
 
 
@@ -76,13 +83,27 @@ class AvitoParser extends BaseParser
      */
     public function run()
     {
-        $paginator = $this->findLastHandledPage('protsessory');
+        $this->parseOffersList('protsessory');
+    }
+
+
+    public function parseOffers()
+    {
+//        $this->productInfoRepo->
+    }
+
+    /**
+     * @param string $productType
+     */
+    public function parseOffersList($productType = 'protsessory')
+    {
+        $paginator = $this->findLastHandledPage($productType);
 
         ++$paginator->page;
 
-        for (;$paginator->page <= $paginator->totalPages; ++$paginator->page) {
+        for (; $paginator->page <= $paginator->totalPages; ++$paginator->page) {
 
-            $this->getProductsFromPage('protsessory', $paginator);
+            $this->getProductsFromPage($productType, $paginator);
 
             $this->handlePage($paginator);
             gc_collect_cycles();
@@ -110,7 +131,7 @@ class AvitoParser extends BaseParser
             return $firstPage;
         }
 
-        return $this->traversePages($productType,2, $firstPage->totalPages, $firstPage->totalPages - 1);
+        return $this->traversePages($productType, 2, $firstPage->totalPages, $firstPage->totalPages - 1);
     }
 
     public function handlePage(ParsingPaginator $paginator)
@@ -122,9 +143,10 @@ class AvitoParser extends BaseParser
         }
 
         $this->em->flush();
-        $this->em->clear();
 
         $isHandled = $this->isPageHandled($paginator);
+
+        $this->em->clear(ParsingProductInfo::class);
 
         return $isHandled;
     }
@@ -236,8 +258,9 @@ class AvitoParser extends BaseParser
         $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
         $site = $this->site;
+        $avitoDateParser = $this->avitoDateParser;
 
-        $products = $crawlerPage->filter('.item')->each(function (Crawler $node) use ($site) {
+        $products = $crawlerPage->filter('.item')->each(function (Crawler $node) use ($site, $avitoDateParser) {
             $title = trim($node->filter('h3 a')->first()->text());
             $url = $node->filter('h3 a')->getNode(0)->getAttribute('href');
             $price = preg_replace('/^\s+([\d\s]*?)\s+руб.*?$/s', '$1', $node->filter('.about')->first()->text());
@@ -245,6 +268,8 @@ class AvitoParser extends BaseParser
             $id = $node->attr('id');
             $siteName = ParsingSite::AVITO;
             $idOnSite = "{$siteName}_{$id}";
+            $dateNode = $node->filter('.date')->getNode(0);
+            $createdAt = $avitoDateParser($dateNode ? $dateNode->textContent : null);
 
             $request = new ProductInfoRequest();
             $request->url = $url;
@@ -252,6 +277,7 @@ class AvitoParser extends BaseParser
             $request->title = $title;
             $request->site = $site;
             $request->idOnSite = $idOnSite;
+            $request->createdAt = $createdAt;
 
             return $request;
         });

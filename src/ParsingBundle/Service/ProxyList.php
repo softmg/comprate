@@ -8,6 +8,7 @@
 namespace ParsingBundle\Service;
 
 use Doctrine\ORM\EntityManager;
+use ParsingBundle\Entity\ParsingSite;
 use ParsingBundle\Entity\ProxyIp;
 
 class ProxyList

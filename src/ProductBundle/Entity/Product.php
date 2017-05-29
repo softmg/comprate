@@ -4,6 +4,7 @@ namespace ProductBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
+use ParsingBundle\Entity\ParsingProductInfo;
 
 /**
  * Product
@@ -70,9 +71,11 @@ class Product
     private $productBenchmark;
     
     /**
-     * @ORM\OneToMany(targetEntity="AvitoOffer", mappedBy="product")
+     * @ORM\OneToMany(targetEntity="ParsingBundle\Entity\ParsingProductInfo", mappedBy="product")
+     *
+     * @var ParsingProductInfo[]|ArrayCollection
      */
-    private $avitoOffers;
+    private $offers;
 
     /**
      * Product constructor.
@@ -80,7 +83,7 @@ class Product
     public function __construct()
     {
         $this->productAttributes = new ArrayCollection();
-        $this->avitoOffers = new ArrayCollection();
+        $this->offers = new ArrayCollection();
     }
 
     /**
@@ -262,30 +265,32 @@ class Product
     }
     
     /**
-     * @return \ProductBundle\Entity\Product
+     * @return ParsingProductInfo[]|ArrayCollection
      */
-    public function getAvitoOffers()
+    public function getOffers()
     {
-        return $this->avitoOffers;
+        return $this->offers;
     }
     
     /**
-     * @param \ProductBundle\Entity\Product $avitoOffers
+     * @param ParsingProductInfo[]|ArrayCollection $offers
      */
-    public function setAvitoOffers($avitoOffers)
+    public function setOffers($offers)
     {
-        $this->avitoOffers = $avitoOffers;
+        $this->offers = new ArrayCollection($offers);
     }
-    
+
     /**
-     * @param AvitoOffer $avitoOffer
+     * @param ParsingProductInfo $offer
+     *
      * @return Product
      */
-    public function addAvitoOffer($avitoOffer)
+    public function addOffer(ParsingProductInfo $offer)
     {
-        $avitoOffer->setProduct($this);
-        $this->avitoOffers->add($avitoOffer);
-        
+        $this->offers->add($offer);
+
+        $offer->setProduct($this);
+
         return $this;
     }
 }
