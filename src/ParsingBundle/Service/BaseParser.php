@@ -287,10 +287,12 @@ abstract class BaseParser
      * @param Bool $forceNew
      * @param Bool $notUseCache
      * @param array $parameters
-     * @throws \Exception
+     * @param array $headers
+     *
      * @return Crawler
+     * @throws \Exception
      */
-    public function getCrawlerPage($pageUrl, $forceNew = false, $notUseCache = false, $parameters = [])
+    public function getCrawlerPage($pageUrl, $forceNew = false, $notUseCache = false, $parameters = [], $headers = [])
     {
         $this->fromCache = false;
         if ($notUseCache || ! $crawler = $this->getCacheCrawler($pageUrl)) {
@@ -301,6 +303,12 @@ abstract class BaseParser
                 }
             } else {
                 $client = $this->getClient();
+            }
+
+            if ($client instanceof GoutteClient && !empty($headers)) {
+                foreach ($headers as $headerName => $headerValue) {
+                    $client->setHeader($headerName, $headerValue);
+                }
             }
 
             if (count($parameters)) {

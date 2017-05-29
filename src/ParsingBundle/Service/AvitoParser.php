@@ -86,14 +86,13 @@ class AvitoParser extends BaseParser
      */
     public function run()
     {
-        $this->parseOffersList('protsessory');
-//        $this->parseOffers();
+//        $this->parseOffersList('protsessory');
+        $this->parseOffers();
     }
 
 
     public function parseOffers()
     {
-
         $offersIterator = $this->productInfoRepo->unhandledProductsQB($this->site)->getQuery()->iterate();
 
         $index = 0;
@@ -123,6 +122,12 @@ class AvitoParser extends BaseParser
         $title = $page->filter('.title-info-title-text');
         $description = $page->filter('.item-description');
         $price = $page->filter('.price-value');
+        $photos = $page->filter('.gallery-img-frame')->each(function (\Symfony\Component\DomCrawler\Crawler $node) {
+            return $node->attr('data-url');
+        });
+
+        $sellerInfo = $page->filter('.seller-info-name');
+        $phoneJS = $page->filter('.avito-ads-container + script');
 
         if (0 === $title->count()) {
             return false;
@@ -132,9 +137,95 @@ class AvitoParser extends BaseParser
         $createAvitoOfferRequest->name = $title->text();
         $createAvitoOfferRequest->description = $this->getNodeText($description);
         $createAvitoOfferRequest->price = $this->parsePrice($price);
-//        $createAvitoOfferRequest->photos = ;
+        $createAvitoOfferRequest->photos = $photos;
+        $createAvitoOfferRequest->username = $this->getNodeText($sellerInfo);
+        $createAvitoOfferRequest->phone = $this->parsePhone($phoneJS, $url);
+
+        $offer->createAvitoOffer($createAvitoOfferRequest);
 
         return true;
+    }
+
+    private function parsePhone(Crawler $phoneJS, $offerUrl)
+    {
+        $js = $this->getNodeText($phoneJS);
+
+        if (!$js) {
+            return null;
+        }
+
+        $token = $this->parseVarFromJS($js, 'avito.item.phone');
+        $id = $this->parseVarFromJS($js, 'avito.item.id');
+
+        if (!$token || !$id) {
+            return null;
+        }
+
+        $privateKey = $this->phoneDemixer($id, $token);
+
+        if (!$privateKey) {
+            return null;
+        }
+
+        $url = "{$this->site->getUrl()}/items/phone/{$id}?pkey={$privateKey}&vsrc=r";
+
+        $crawler = $this->getCrawlerPage($url, false, false, [], [
+            'X-Requested-With' => 'XMLHttpRequest',
+            'Referer' => $offerUrl,
+        ]);
+
+        $element = $crawler->filter('p');
+
+        if ($element->count() === 0) {
+            return null;
+        }
+
+        $parsed = json_decode($element->text(), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE || isset($parsed['error']) || !isset($parsed['image64'])) {
+            return null;
+        }
+
+        return $parsed['image64'];
+    }
+
+
+    private function parseVarFromJS($js, $varName)
+    {
+        $varName = preg_quote($varName);
+
+        if (0 === preg_match("/{$varName}\s=\s'([^']+)'/u", $js, $phoneMatches)) {
+            return null;
+        }
+
+        return $phoneMatches[1];
+    }
+
+    private function phoneDemixer($id, $token)
+    {
+        if (!$token) {
+            return '';
+        }
+
+        if (0 === preg_match_all('/[0-9a-f]+/u', $token, $matches)) {
+            return '';
+        }
+
+        $token = join('', $id % 2 === 0 ? array_reverse($matches[0]): $matches[0]);
+
+        $tokenLen = mb_strlen($token);
+
+        $shortToken = '';
+
+        for ($index = 0; $index < $tokenLen; ++$index) {
+            if ($index % 3 !== 0) {
+                continue;
+            }
+
+            $shortToken .= $token[$index];
+        }
+
+        return $shortToken;
     }
 
     private function parsePrice(Crawler $crawler = null)
@@ -155,7 +246,7 @@ class AvitoParser extends BaseParser
             return $defaultValue;
         }
 
-        return $trim ? trim($node->text()): $node->text();
+        return $trim ? trim($node->text()) : $node->text();
     }
 
     /**

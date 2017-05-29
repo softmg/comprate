@@ -2,6 +2,7 @@
 
 namespace ParsingBundle\Entity;
 
+use ApiBundle\RequestObject\CreateAvitoOfferRequest;
 use ApiBundle\RequestObject\ProductInfoRequest;
 use Doctrine\ORM\Mapping as ORM;
 use ProductBundle\Entity\AvitoOffer;
@@ -247,6 +248,20 @@ class ParsingProductInfo
         $this->avitoOffer = $offer;
 
         return $this;
+    }
+
+    public function createAvitoOffer(CreateAvitoOfferRequest $request)
+    {
+        $offer = new AvitoOffer();
+        $offer->setName($request->name);
+        $offer->setPrice($request->price);
+        $offer->setDescription($request->description);
+        $offer->setPhotos($request->photos);
+        $offer->setUsername($request->username);
+        $offer->setPhone($request->phone);
+
+        $this->setAvitoOffer($offer);
+        $this->isFail = false;
     }
 
     /**

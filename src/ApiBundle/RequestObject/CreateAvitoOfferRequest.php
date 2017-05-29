@@ -31,6 +31,16 @@ class CreateAvitoOfferRequest implements IRequestObject
     public $photos;
 
     /**
+     * @var string
+     */
+    public $username;
+
+    /**
+     * @var string
+     */
+    public $phone;
+
+    /**
      * @return Constraint[]
      */
     public function rules()
