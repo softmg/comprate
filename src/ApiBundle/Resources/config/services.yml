@@ -4,3 +4,48 @@ services:
         class: ApiBundle\DataTransformer\ProductDataTransformer
         arguments:
             - "@doctrine.orm.entity_manager"
+
+    request_object_handler:
+        class: ApiBundle\RequestObject\RequestObjectHandler
+        autowire: true
+
+    api.console_command_listener:
+        class: ApiBundle\Middleware\ConsoleCommandListener
+        autowire: true
+        private: true
+        tags:
+            - {name: kernel.event_listener, event: console.command}
+
+    api.flush_on_console_terminate:
+        class: ApiBundle\Middleware\FlushOnConsoleTerminate
+        arguments: ['@doctrine.orm.entity_manager']
+        private: true
+        tags:
+            - {name: kernel.event_listener, event: console.terminate}
+
+    app.converter.request_objects:
+        class: ApiBundle\RequestObject\RequestObjectConverter
+        arguments: ['@request_object_handler']
+        private: true
+        tags:
+            - {name: request.param_converter, priority: 1, converter: 'request_objects'}
+
+
+    api.middleware.flush_on_response:
+        class: ApiBundle\Middleware\FlushOnResponse
+        arguments: ['@doctrine.orm.entity_manager']
+        private: true
+        tags:
+          - {name: kernel.event_listener, event: kernel.response, method: onKernelResponse}
+
+
+    api.service_method_validator:
+        class: ApiBundle\Validator\ServiceMethodValidator
+        arguments: ['@service_container']
+        tags:
+            - { name: validator.constraint_validator }
+
+    api.contains_instance_of_validator:
+        class: ApiBundle\Validator\InstanceOfValidator
+        tags:
+            - { name: validator.constraint_validator }

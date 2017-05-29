@@ -10,7 +10,7 @@ use ProductBundle\Entity\ProductType;
  * ParsingAttributeInfo
  *
  * @ORM\Table(name="parsing_attribute_info")
- * @ORM\Entity(repositoryClass="ParsingBundle\Repository\ParsingAttributeInfoRepository")
+ * @ORM\Entity()
  */
 class ParsingAttributeInfo
 {

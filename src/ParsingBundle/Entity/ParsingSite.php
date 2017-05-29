@@ -167,4 +167,9 @@ class ParsingSite
     {
         $this->isFreeProxy = $isFreeProxy;
     }
+
+    public function __toString()
+    {
+        return (string)$this->getName();
+    }
 }

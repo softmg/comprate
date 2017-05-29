@@ -2,7 +2,9 @@
 
 namespace ParsingBundle\Entity;
 
+use ApiBundle\RequestObject\ProductInfoRequest;
 use Doctrine\ORM\Mapping as ORM;
+use ProductBundle\Entity\AvitoOffer;
 use ProductBundle\Entity\Product;
 
 /**
@@ -24,9 +26,15 @@ class ParsingProductInfo
     private $id;
 
     /**
+     * @ORM\Column(name="id_on_site", type="string", unique=true, nullable=true, options={"default"=null})
+     * @var string
+     */
+    private $idOnSite;
+
+    /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product")
+     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product", inversedBy="offers")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      */
     private $product;
@@ -68,14 +76,26 @@ class ParsingProductInfo
     private $updatedAt;
 
     /**
-     * ParsingProductInfo constructor.
+     * @ORM\Column(type="datetime")
+     * @var \DateTime
      */
-    public function __construct()
+    private $offerCreatedAt;
+
+    /**
+     * @ORM\Embedded(class="ProductBundle\Entity\AvitoOffer")
+     * @var AvitoOffer
+     */
+    private $avitoOffer;
+
+    /**
+     * ParsingProductInfo constructor.
+     *
+     * @param ProductInfoRequest $request
+     */
+    public function __construct(ProductInfoRequest $request)
     {
-        $this->setUpdatedAt(new \DateTime('now'));
-        if (!$this->getCreatedAt()) {
-            $this->setCreatedAt(new \DateTime('now'));
-        }
+        $this->updateBaseInfo($request);
+        $this->setCreatedAt(new \DateTime('now'));
     }
 
     /**
@@ -215,5 +235,36 @@ class ParsingProductInfo
     public function updateModifiedDatetime()
     {
         $this->setUpdatedAt(new \DateTime());
+    }
+
+    /**
+     * @param AvitoOffer|null $offer
+     *
+     * @return self
+     */
+    public function setAvitoOffer(AvitoOffer $offer = null)
+    {
+        $this->avitoOffer = $offer;
+
+        return $this;
+    }
+
+    /**
+     * @return AvitoOffer|null
+     */
+    public function getAvitoOffer()
+    {
+        return $this->avitoOffer;
+    }
+
+    public function updateBaseInfo(ProductInfoRequest $request)
+    {
+        $this->url = $request->url;
+        $this->idOnSite = $request->idOnSite;
+        $this->isFail = $request->isFail;
+        $this->site = $request->site;
+        $this->offerCreatedAt = $request->createdAt;
+
+        $this->updateModifiedDatetime();
     }
 }

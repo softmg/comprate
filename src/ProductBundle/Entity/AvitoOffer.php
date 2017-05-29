@@ -3,100 +3,70 @@
 namespace ProductBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use ParsingBundle\Entity\Price;
 
 /**
  * AvitoOffer
  *
- * @ORM\Table(name="avito_offer")
- * @ORM\Entity(repositoryClass="ProductBundle\Repository\AvitoOfferRepository")
+ * @ORM\Embeddable
  */
 class AvitoOffer
 {
     /**
-     * @var int
-     *
-     * @ORM\Column(name="id", type="integer")
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     */
-    private $id;
-
-    /**
      * @var string
      *
-     * @ORM\Column(name="name", type="string", length=255, unique=true)
+     * @ORM\Column(name="name", type="string", length=255, nullable=true)
      */
     private $name;
     
     /**
      * @var string
      *
-     * @ORM\Column(name="description", type="string", length=1000, unique=true)
+     * @ORM\Column(name="description", type="string", length=1000, nullable=true)
      */
     private $description;
     
     /**
-     * @var string
+     * @var string|Price
      *
-     * @ORM\Column(name="price", type="decimal", precision=10, scale=2, nullable=true)
+     * @ORM\Embedded(class="ParsingBundle\Entity\Price")
      */
     private $price;
     
     /**
-     * @var string
+     * @var string[]
      *
-     * @ORM\Column(name="photos", type="string", length=1000, unique=true)
+     * @ORM\Column(name="photos", type="array", nullable=true)
      */
     private $photos;
     
     /**
      * @var string
      *
-     * @ORM\Column(name="username", type="string", length=255, unique=true)
+     * @ORM\Column(name="username", type="string", length=255, nullable=true)
      */
     private $username;
     
     /**
      * @var string
      *
-     * @ORM\Column(name="phone", type="string", length=255, unique=true)
+     * @ORM\Column(name="phone", type="string", length=255, nullable=true)
      */
     private $phone;
-    
-    /**
-     * @var Product
-     *
-     * @ORM\ManyToOne(targetEntity="Product", inversedBy="avitoOffers")
-     * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
-     */
-    private $product;
-    
-    /**
-     * @var \ParsingBundle\Entity\ParsingProductInfo
-     *
-     * @ORM\ManyToOne(targetEntity="ParsingBundle\Entity\ParsingProductInfo", inversedBy="avitoOffers")
-     * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
-     */
-    private $parsingProductInfo;
 
-    /**
-     * Get id
-     *
-     * @return int
-     */
-    public function getId()
+    public function __construct()
     {
-        return $this->id;
+        $this->photos = [];
     }
 
     /**
      * Set name
      *
-     * @param string $name
+     * @param string|null $name
      *
      * @return AvitoOffer
      */
-    public function setName($name)
+    public function setName($name = null)
     {
         $this->name = $name;
 
@@ -112,39 +82,15 @@ class AvitoOffer
     {
         return $this->name;
     }
-    
-    /**
-     * Set product
-     *
-     * @param Product $product
-     *
-     * @return AvitoOffer
-     */
-    public function setProduct($product)
-    {
-        $this->product = $product;
-        
-        return $this;
-    }
-    
-    /**
-     * Get product
-     *
-     * @return Product
-     */
-    public function getProduct()
-    {
-        return $this->product;
-    }
-    
+
     /**
      * Set price
      *
-     * @param string $price
+     * @param Price|string $price
      *
      * @return AvitoOffer
      */
-    public function setPrice($price)
+    public function setPrice(Price $price = null)
     {
         $this->price = $price;
 
@@ -154,7 +100,7 @@ class AvitoOffer
     /**
      * Get price
      *
-     * @return string
+     * @return Price|null
      */
     public function getPrice()
     {
@@ -170,15 +116,15 @@ class AvitoOffer
     }
     
     /**
-     * @param string $description
+     * @param string|null $description
      */
-    public function setDescription($description)
+    public function setDescription($description = null)
     {
         $this->description = $description;
     }
     
     /**
-     * @return string
+     * @return string[]
      */
     public function getPhotos()
     {
@@ -186,9 +132,9 @@ class AvitoOffer
     }
     
     /**
-     * @param string $photos
+     * @param string[] $photos
      */
-    public function setPhotos($photos)
+    public function setPhotos(array $photos = null)
     {
         $this->photos = $photos;
     }
@@ -224,20 +170,26 @@ class AvitoOffer
     {
         $this->phone = $phone;
     }
-    
-    /**
-     * @return \ParsingBundle\Entity\ParsingProductInfo
-     */
-    public function getParsingProductInfo()
+
+    public function addPhoto($photo)
     {
-        return $this->parsingProductInfo;
+        $index = array_search($photo, $this->photos, true);
+
+        if (false === $index) {
+            return;
+        }
+
+        $this->photos[] = $photo;
     }
-    
-    /**
-     * @param \ParsingBundle\Entity\ParsingProductInfo $parsingProductInfo
-     */
-    public function setParsingProductInfo($parsingProductInfo)
+
+    public function removePhoto($photo)
     {
-        $this->parsingProductInfo = $parsingProductInfo;
+        $index = array_search($photo, $this->photos, true);
+
+        if (false === $index) {
+            return;
+        }
+
+        array_splice($this->photos, $index, 1);
     }
 }

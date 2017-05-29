@@ -30,6 +30,12 @@ use Symfony\Component\Finder\SplFileInfo;
 abstract class BaseParser
 {
     const PRODUCT_ACTUALITY = 100;
+
+    /**
+     * 30 minutes.
+     */
+    const CACHE_LIFETIME = 1800;
+
     protected static $sleepBeforeSecondRequest = [0, 1];
     protected static $attributeValueReplacements = [
         'есть' => true,
@@ -310,7 +316,7 @@ abstract class BaseParser
             $this->response = $response->getContent();
 
             /* if success response => save content to cache */
-            if ($crawler && $this->checkSuccessResponse($response)) {
+            if ($crawler && $this->checkSuccessResponse($response) && $crawler->getUri() !== 'https://www.avito.ru/blocked') {
                 $this->dump(" page $pageUrl success! Save it to cache {$this->getCacheFileName($pageUrl)}");
                 if ($this->proxyIp) {
                     $this->proxyList->addProxyIpSuccess($this->proxyIp);
@@ -399,7 +405,7 @@ abstract class BaseParser
 
         $this->checkCacheDir();
 
-        if ($this->isFileExistInCache($pageUrl)) {
+        if ($this->isFileExistInCache($pageUrl) && !$this->isCacheExpired($pageUrl)) {
             $file = file_get_contents($this->getCacheFileName($pageUrl));
 
             /* make sure we have utf-8 encoding file */
@@ -415,6 +421,15 @@ abstract class BaseParser
         $this->fromCache = true;
 
         return $crawler;
+    }
+
+    private function isCacheExpired($pageUrl)
+    {
+        $modifiedTime = new \DateTime('@' . (filemtime($this->getCacheFileName($pageUrl)) + self::CACHE_LIFETIME));
+
+        $now = new \DateTime();
+
+        return $now > $modifiedTime;
     }
 
     /**
