@@ -22,28 +22,28 @@ class ParsingProductInfo
     /**
      * @var string
      *
-     * @ORM\Column(name="url", type="text")
+     * @ORM\Column(name="url", type="text", nullable=true)
      */
     private $url;
 
     /**
      * @var boolean
      *
-     * @ORM\Column(name="is_fail", type="boolean")
+     * @ORM\Column(name="is_fail", type="boolean", nullable=true)
      */
     private $isFail = false;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="created_at", type="datetime")
+     * @ORM\Column(name="created_at", type="datetime", nullable=true)
      */
     private $createdAt;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="updated_at", type="datetime")
+     * @ORM\Column(name="updated_at", type="datetime", nullable=true)
      */
     private $updatedAt;
 

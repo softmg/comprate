@@ -28,9 +28,11 @@ class ProductHandler
         $this->requestObjectHandler = $requestObjectHandler;
     }
 
-    public function updateProductInfo(Product $product, ProductInfoRequest $request)
+    public function updateProductInfo(Product $product, ProductInfoRequest $request, $validate = true)
     {
-        $this->requestObjectHandler->validate($request, true);
+        if ($validate) {
+            $this->requestObjectHandler->validate($request, true);
+        }
 
         $productInfo = $product->getProductInfo();
 
@@ -39,12 +41,5 @@ class ProductHandler
         }
 
         $productInfo->updateBaseInfo($request);
-    }
-
-    public function getOne(GetOneProductRequest $request, $groups = null)
-    {
-        $this->requestObjectHandler->validate($request, true, $groups);
-
-        return $this->productRepo->getOne($request);
     }
 }

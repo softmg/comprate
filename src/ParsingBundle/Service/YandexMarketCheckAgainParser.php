@@ -61,8 +61,8 @@ class YandexMarketCheckAgainParser extends YandexMarketParser
     {
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('pr_in')
-            ->from('ParsingBundle:ParsingProductInfo', 'pr_in')
-            ->where('pr_in.isFail = :isFail')
+            ->from('ProductBundle:Offer', 'pr_in')
+            ->where('pr_in.productInfo.isFail = :isFail')
             ->andWhere('pr_in.site = :site')
             ->setParameter(':isFail', true)
             ->setParameter(':site', $this->getParserSite())

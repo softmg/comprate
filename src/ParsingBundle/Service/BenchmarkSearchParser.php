@@ -52,10 +52,10 @@ class BenchmarkSearchParser extends BaseParser
      */
     protected function findProduct($product)
     {
-        $productInfoRepo = $this->em->getRepository('ParsingBundle:ParsingProductInfo');
-        $productInfo = $productInfoRepo->find(6);
-        $productInfo->setIsFail(1);
-        $this->em->persist($productInfo);
+        $offerRepo = $this->em->getRepository('ProductBundle:Offer');
+        $offer = $offerRepo->find(6);
+        $offer->setIsFail(1);
+        $this->em->persist($offer);
         $this->em->flush();
         var_dump(count(1)); exit;
         $crawlerPage = $this->getCrawlerPage($this->getSerchUrl($product->getName()));

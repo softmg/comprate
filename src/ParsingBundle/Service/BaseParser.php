@@ -561,15 +561,12 @@ abstract class BaseParser
 
         $product->setSite($this->getParserSite());
 
-        try {
-            $this->productHandler->updateProductInfo($product, $productInfoRequest);
+        $this->productHandler->updateProductInfo($product, $productInfoRequest, false);
 
-            if ($this->em->isOpen()) {
-                $this->em->flush();
+        if ($this->em->isOpen()) {
+            $this->em->flush();
 
-                $this->dump(" save product info for id: {$product->getId()}");
-            }
-        } catch (RequestObjectValidationException $ignored) {
+            $this->dump(" save product info for id: {$product->getId()}");
         }
     }
 
@@ -584,8 +581,8 @@ abstract class BaseParser
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('p')
             ->from('ProductBundle:Product', 'p')
-            ->leftJoin('ParsingBundle:ParsingProductInfo', 'pr_in', Expr\Join::WITH, 'pr_in.product=p')
-            ->where('pr_in.updatedAt is NULL OR pr_in.updatedAt < :checkTime')
+            ->leftJoin('ProductBundle:Offer', 'pr_in', Expr\Join::WITH, 'pr_in.product=p')
+            ->where('pr_in.productInfo.updatedAt is NULL OR pr_in.productInfo.updatedAt < :checkTime')
             ->setParameter(':checkTime', $checkTime)
             ->getQuery()
             ->execute();

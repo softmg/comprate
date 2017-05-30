@@ -10,6 +10,7 @@ namespace ParsingBundle\Service;
 use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
 use ProductBundle\Entity\Attribute;
+use ProductBundle\Entity\Offer;
 use ProductBundle\Entity\Product;
 use ProductBundle\Entity\ProductType;
 use Symfony\Component\DomCrawler\Crawler;
@@ -46,19 +47,21 @@ class PcpartpickerProductInfoParser extends BaseParser
     /**
      * Parse page with product characteristics
      * @param Product $product
-     * @param Crawler
-     * @param String
+     * @param Crawler $productPageCrawler
+     * @param $urlForRequest
+     * @return bool
      * @throws \Exception
-     * @return Bool
+     * @internal param $Crawler
+     * @internal param $String
      */
-    protected function parseProductCharacteristicPage($product, $productPageCrawler, $urlForRequest)
+    protected function parseProductCharacteristicPage($product, Crawler $productPageCrawler, $urlForRequest)
     {
         $attributes = [];
         $attributesValues = [];
 
         if ($productPageCrawler->filter('.specs h4')->count()) {
             $attributes = $productPageCrawler->filter('.specs h4')
-                ->each(function ($node) {
+                ->each(function (Crawler $node) {
                     $text = $node->text();
 
                     return trim($text);
@@ -69,9 +72,8 @@ class PcpartpickerProductInfoParser extends BaseParser
 
             $specAr = array_filter($specAr, function ($element) use ($attributes) {
                 $element = trim($element);
-                if ($element && $element !== 'Specifications' && !in_array($element, $attributes)) {
-                    return $element;
-                }
+
+                return $element && $element !== 'Specifications' && !in_array($element, $attributes);
             });
 
             $specAr = array_values($specAr);
@@ -190,13 +192,16 @@ class PcpartpickerProductInfoParser extends BaseParser
         return $crawler;
     }
 
+    /**
+     * @return Offer[]
+     */
     protected function getProductsForFirstParsing()
     {
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('pr_in')
-            ->from('ParsingBundle:ParsingProductInfo', 'pr_in')
+            ->from('ProductBundle:Offer', 'pr_in')
             //->leftJoin('ProductBundle:Product', 'p', Expr\Join::WITH, 'pr_in.product=p')
-            ->where('pr_in.isFail = :isFail')
+            ->where('pr_in.productInfo.isFail = :isFail')
             ->andWhere('pr_in.site = :site')
             ->setParameter(':isFail', true)
             ->setParameter(':site', $this->getParserSite())

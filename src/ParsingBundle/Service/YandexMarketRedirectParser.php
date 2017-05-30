@@ -103,13 +103,13 @@ class YandexMarketRedirectParser extends YandexMarketParser
 
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('pr_in')
-            ->from('ParsingBundle:ParsingProductInfo', 'pr_in')
+            ->from('ProductBundle:Offer', 'pr_in')
             ->leftJoin('ProductBundle:Product', 'p', Expr\Join::WITH, 'pr_in.product=p')
-            ->where('pr_in.url LIKE :redirUrl')
+            ->where('pr_in.productInfo.url LIKE :redirUrl')
             //->andWhere('pr_in.product = :product')
             ->setParameter(':redirUrl', '%redir%')
             //->setParameter(':product', $product)
-            ->orderBy('pr_in.updatedAt', 'DESC')
+            ->orderBy('pr_in.productInfo.updatedAt', 'DESC')
             ->getQuery()
             ->execute()
         ;
