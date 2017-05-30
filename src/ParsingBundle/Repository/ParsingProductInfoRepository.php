@@ -4,6 +4,7 @@ namespace ParsingBundle\Repository;
 
 use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
+use ProductBundle\Repository\BaseRepo;
 
 /**
  * ParsingProductInfoRepository

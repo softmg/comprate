@@ -78,7 +78,7 @@ class BenchmarkParser extends BaseParser
                         $this->em->flush();
                     }
                     if ($product) {
-                        $this->saveProductInfo($product, $productUrl);
+                        $this->saveProduct($product, $productUrl);
                     }
                 }
             }

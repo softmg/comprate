@@ -2,3 +2,35 @@ services:
 #    product.example:
 #        class: ProductBundle\Example
 #        arguments: ["@service_id", "plain_value", "%parameter%"]
+
+    repo:
+        class: Doctrine\ORM\EntityRepository
+        factory: ['@doctrine.orm.default_entity_manager', getRepository]
+        abstract: true
+
+    repo.offer:
+        parent: repo
+        arguments:
+            - ProductBundle\Entity\Offer
+
+        autowiring_types: ProductBundle\Repository\OfferRepo
+
+    repo.product:
+        parent: repo
+        arguments:
+            - ProductBundle\Entity\Product
+
+        autowiring_types: ProductBundle\Repository\ProductRepository
+
+    repo.product_type:
+        parent: repo
+        arguments:
+            - ProductBundle\Entity\ProductType
+
+    offer_handler:
+        class: ProductBundle\Services\OfferHandler
+        autowire: true
+
+    product_handler:
+        class: ProductBundle\Services\ProductHandler
+        autowire: true

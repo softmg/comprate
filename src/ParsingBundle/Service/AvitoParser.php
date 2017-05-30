@@ -12,19 +12,31 @@ use ApiBundle\RequestObject\CreateAvitoOfferRequest;
 use ApiBundle\RequestObject\ProductInfoRequest;
 use ApiBundle\RequestObject\RequestObjectHandler;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use function GuzzleHttp\Psr7\parse_query;
 use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
-use ParsingBundle\Entity\Price;
-use ParsingBundle\Repository\ParsingProductInfoRepository;
+use ProductBundle\Entity\Price;
 use ParsingBundle\Repository\ParsingSiteRepository;
 use ParsingBundle\RequestObjects\ParsingPaginator;
 use ProductBundle\Entity\AvitoOffer;
+use ProductBundle\Entity\Offer;
+use ProductBundle\Entity\ProductType;
+use ProductBundle\Repository\OfferRepo;
+use ProductBundle\Repository\ProductTypeRepository;
+use ProductBundle\RequestObjects\CreateOfferRequest;
+use ProductBundle\RequestObjects\GetOneOfferRequest;
+use ProductBundle\RequestObjects\GetOneProductRequest;
+use ProductBundle\RequestObjects\UpdateOfferTypeAndSiteRequest;
+use ProductBundle\Services\OfferHandler;
+use ProductBundle\Services\ProductHandler;
 use Symfony\Component\DomCrawler\Crawler;
 
 class AvitoParser extends BaseParser
 {
+    const TYPES = [
+        ProductType::CPU => 'protsessory'
+    ];
+
     protected $notUseCacheForSearch = false;
 
     const SORT_BY_NEW = 4;
@@ -34,9 +46,9 @@ class AvitoParser extends BaseParser
     const SEARCH_URL = 'https://www.avito.ru/moskva/tovary_dlya_kompyutera/komplektuyuschie/%s?p=%s&s=%s';
 
     /**
-     * @var ParsingProductInfoRepository
+     * @var OfferRepo
      */
-    private $productInfoRepo;
+    private $offerRepo;
 
     /**
      * @var RequestObjectHandler
@@ -58,6 +70,16 @@ class AvitoParser extends BaseParser
      */
     private $avitoDateParser;
 
+    /**
+     * @var ProductTypeRepository
+     */
+    private $productTypeRepo;
+
+    /**
+     * @var OfferHandler
+     */
+    private $offerHandler;
+
     public function __construct(
         EntityManager $em,
         ProxyList $proxyList,
@@ -65,42 +87,71 @@ class AvitoParser extends BaseParser
         $rucaptcha_token,
         $proxy_userpasswd,
         $phantomJsScriptPath,
-        ParsingProductInfoRepository $productInfoRepo,
+        ProductHandler $productHandler,
+        OfferRepo $offerRepo,
         RequestObjectHandler $requestObjectHandler,
         ParsingSiteRepository $siteRepo,
-        AvitoDateParser $avitoDateParser
+        AvitoDateParser $avitoDateParser,
+        ProductTypeRepository $productTypeRepo,
+        OfferHandler $offerHandler
     )
     {
-        parent::__construct($em, $proxyList, $cache_dir, $rucaptcha_token, $proxy_userpasswd, $phantomJsScriptPath);
+        parent::__construct($em, $proxyList, $cache_dir, $rucaptcha_token, $proxy_userpasswd, $phantomJsScriptPath, $productHandler);
 
-        $this->productInfoRepo = $productInfoRepo;
+        $this->offerRepo = $offerRepo;
         $this->requestObjectHandler = $requestObjectHandler;
         $this->siteRepo = $siteRepo;
         $this->site = $siteRepo->findOneBy(['name' => ParsingSite::AVITO]);
         $this->avitoDateParser = $avitoDateParser;
+        $this->productTypeRepo = $productTypeRepo;
+        $this->offerHandler = $offerHandler;
     }
-
 
     /**
      * Run parsing
      */
     public function run()
     {
-//        $this->parseOffersList('protsessory');
+
+        /** @var ProductType[] $types */
+//        $types = $this->productTypeRepo->findAll();
+        $types = $this->productTypeRepo->findBy(['code' => ProductType::CPU]);
+
+
+//        foreach ($types as $type) {
+//            $this->parseOffersList($type);
+//        }
+
         $this->parseOffers();
+    }
+
+    /**
+     * @param ProductType $type
+     *
+     * @return bool|string
+     */
+    private function getProductTypeURLFragment(ProductType $type)
+    {
+        $code = $type->getCode();
+
+        if (!isset(self::TYPES[$code])) {
+            return false;
+        }
+
+        return self::TYPES[$code];
     }
 
 
     public function parseOffers()
     {
-        $offersIterator = $this->productInfoRepo->unhandledProductsQB($this->site)->getQuery()->iterate();
+        $offersIterator = $this->offerRepo->unhandledOffersQB($this->site)->getQuery()->iterate();
 
         $index = 0;
 
         foreach ($offersIterator as $row) {
             ++$index;
 
-            /** @var ParsingProductInfo $offer */
+            /** @var Offer $offer */
             $offer = $row[0];
 
             $this->parseOffer($offer);
@@ -114,9 +165,9 @@ class AvitoParser extends BaseParser
         return true;
     }
 
-    public function parseOffer(ParsingProductInfo $offer)
+    public function parseOffer(Offer $offer)
     {
-        $url = $this->site->getUrl() . $offer->getUrl();
+        $url = $this->site->getUrl() . $offer->getProductInfo()->getUrl();
         $page = $this->getCrawlerPage($url);
 
         $title = $page->filter('.title-info-title-text');
@@ -141,7 +192,9 @@ class AvitoParser extends BaseParser
         $createAvitoOfferRequest->username = $this->getNodeText($sellerInfo);
         $createAvitoOfferRequest->phone = $this->parsePhone($phoneJS, $url);
 
-        $offer->createAvitoOffer($createAvitoOfferRequest);
+        $avitoOffer = new AvitoOffer($createAvitoOfferRequest);
+
+        $offer->setAvitoOffer($avitoOffer);
 
         return true;
     }
@@ -250,74 +303,85 @@ class AvitoParser extends BaseParser
     }
 
     /**
-     * @param string $productType
+     * @param ProductType $type
+     *
+     * @return bool
      */
-    public function parseOffersList($productType = 'protsessory')
+    public function parseOffersList(ProductType $type)
     {
-        $paginator = $this->findLastHandledPage($productType);
+        $fragment = $this->getProductTypeURLFragment($type);
+
+        if (false === $fragment) {
+            return false;
+        }
+
+        $paginator = $this->findLastHandledPage($type);
 
         ++$paginator->page;
 
         for (; $paginator->page <= $paginator->totalPages; ++$paginator->page) {
 
-            $this->getProductsFromPage($productType, $paginator);
+            $this->getProductsFromPage($type, $paginator);
 
-            $this->handlePage($paginator);
+            $this->handlePage($paginator, $type);
             gc_collect_cycles();
         }
+
+        return true;
     }
 
     /**
      * Find last handled page. Complexity O(log n)
      *
-     * @param string $productType
+     * @param ProductType $type
      *
      * @return mixed|ParsingPaginator
      */
-    public function findLastHandledPage($productType)
+    public function findLastHandledPage(ProductType $type)
     {
+
         $firstPage = new ParsingPaginator();
 
         $firstPage->page = 1;
 
-        $this->getProductsFromPage($productType, $firstPage);
+        $this->getProductsFromPage($type, $firstPage);
 
         if (!$this->isPageHandled($firstPage)) {
-            $this->handlePage($firstPage);
+            $this->handlePage($firstPage, $type);
 
             return $firstPage;
         }
 
-        return $this->traversePages($productType, 2, $firstPage->totalPages, $firstPage->totalPages - 1);
+        return $this->traversePages($type, 2, $firstPage->totalPages, $firstPage->totalPages - 1);
     }
 
-    public function handlePage(ParsingPaginator $paginator)
+    public function handlePage(ParsingPaginator $paginator, ProductType $type)
     {
-        $this->createProducts($paginator->items);
+        $this->createOffers($paginator->items, $type);
 
         if (!$this->em->isOpen()) {
-            return;
+            return false;
         }
 
         $this->em->flush();
 
         $isHandled = $this->isPageHandled($paginator);
 
-        $this->em->clear(ParsingProductInfo::class);
+        $this->em->clear(Offer::class);
 
         return $isHandled;
     }
 
-    private function traversePages($productType, $first, $last, $total)
+    private function traversePages(ProductType $type, $first, $last, $total)
     {
         if ($total <= 1) {
             $pageValue = new ParsingPaginator();
             $pageValue->page = $first;
 
-            $this->getProductsFromPage($productType, $pageValue, self::SORT_BY_OLD);
+            $this->getProductsFromPage($type, $pageValue, self::SORT_BY_OLD);
 
             if (!$this->isPageHandled($pageValue)) {
-                $this->handlePage($pageValue);
+                $this->handlePage($pageValue, $type);
             }
 
             return $pageValue;
@@ -328,7 +392,7 @@ class AvitoParser extends BaseParser
         $pageValue = new ParsingPaginator();
         $pageValue->page = $page;
 
-        $this->getProductsFromPage($productType, $pageValue, self::SORT_BY_OLD);
+        $this->getProductsFromPage($type, $pageValue, self::SORT_BY_OLD);
 
         if ($this->isPageHandled($pageValue)) {
 
@@ -336,12 +400,12 @@ class AvitoParser extends BaseParser
                 return $pageValue;
             }
 
-            return $this->traversePages($productType, $page, $last, $last - $page);
+            return $this->traversePages($type, $page, $last, $last - $page);
         }
 
         $last = $page - 1;
 
-        return $this->traversePages($productType, $first, $last, $last - $first);
+        return $this->traversePages($type, $first, $last, $last - $first);
     }
 
     private function isPageHandled(ParsingPaginator $paginator)
@@ -349,7 +413,7 @@ class AvitoParser extends BaseParser
 
         $ids = $this->getIdsOnSiteFromPaginator($paginator);
 
-        $count = $this->productInfoRepo->countByIdsOnSite($ids);
+        $count = $this->offerRepo->countByIdsOnSite($ids);
 
         return count($ids) === $count;
     }
@@ -364,60 +428,69 @@ class AvitoParser extends BaseParser
 
     /**
      * @param ProductInfoRequest[] $productsRequest
+     * @param ProductType $type
      *
      * @return array
      */
-    public function createProducts($productsRequest)
+    public function createOffers($productsRequest, ProductType $type)
     {
-        $products = [];
+        $offers = [];
 
         foreach ($productsRequest as $request) {
-            $product = $this->productInfoRepo->findByIdOnSite($request->idOnSite);
+            $getOneOfferRequest = new GetOneOfferRequest();
+            $getOneOfferRequest->idOnSite = $request->idOnSite;
 
-            if ($product) {
-                $errors = $this->requestObjectHandler->validate($request);
+            $offer = $this->offerHandler->getOne($getOneOfferRequest, ['id-on-site-is-required']);
 
-                if ($errors->count() > 0) {
-                    continue;
-                }
+            if (!$offer) {
+                $createOfferRequest = new CreateOfferRequest();
+                $createOfferRequest->productInfo = new ParsingProductInfo($request);
+                $createOfferRequest->type = $type;
+                $createOfferRequest->site = $this->getParserSite();
 
-                $product->updateBaseInfo($request);
-            } else {
-
-//                $errors = $this->requestObjectHandler->validate($request, ['create']);
-//
-//                if ($errors->count() > 0) {
-//                    continue;
-//                }
-
-                $product = new ParsingProductInfo($request);
-                $this->productInfoRepo->add($product);
+                $offer = $this->offerHandler->createNew($createOfferRequest);
             }
 
-            $products[] = $product;
+            $updateOfferRequest = new UpdateOfferTypeAndSiteRequest();
+
+            $updateOfferRequest->type = $type;
+            $updateOfferRequest->site = $this->site;
+
+            $offer->updateTypeAndSite($updateOfferRequest);
+
+            $productInfo = $offer->getProductInfo();
+
+            if (!$productInfo) {
+                $productInfo = new ParsingProductInfo($request);
+            }
+
+            $productInfo->updateBaseInfo($request);
+
+            $offers[] = $offer;
         }
 
-        return $products;
+        return $offers;
     }
 
     /**
-     * @param string $productType
+     * @param ProductType $type
      * @param ParsingPaginator $paginator
-     *
      * @param int $sortBy
+     *
      * @return ParsingPaginator
      */
-    public function getProductsFromPage($productType, $paginator, $sortBy = self::SORT_BY_OLD)
+    public function getProductsFromPage(ProductType $type, $paginator, $sortBy = self::SORT_BY_OLD)
     {
-        $this->requestObjectHandler->validate($paginator, null, true);
+        $fragment = $this->getProductTypeURLFragment($type);
 
-        $urlForRequest = sprintf(self::SEARCH_URL, $productType, $paginator->page, $sortBy);
+        $this->requestObjectHandler->validate($paginator, true);
+
+        $urlForRequest = sprintf(self::SEARCH_URL, $fragment, $paginator->page, $sortBy);
         $crawlerPage = $this->getCrawlerPage($urlForRequest);
 
-        $site = $this->site;
         $avitoDateParser = $this->avitoDateParser;
 
-        $products = $crawlerPage->filter('.item')->each(function (Crawler $node) use ($site, $avitoDateParser) {
+        $products = $crawlerPage->filter('.item')->each(function (Crawler $node) use ($avitoDateParser) {
             $title = trim($node->filter('h3 a')->first()->text());
             $url = $node->filter('h3 a')->getNode(0)->getAttribute('href');
             $price = preg_replace('/^\s+([\d\s]*?)\s+руб.*?$/s', '$1', $node->filter('.about')->first()->text());
@@ -432,7 +505,6 @@ class AvitoParser extends BaseParser
             $request->url = $url;
             $request->price = $price;
             $request->title = $title;
-            $request->site = $site;
             $request->idOnSite = $idOnSite;
             $request->createdAt = $createdAt;
 

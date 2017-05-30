@@ -65,7 +65,7 @@ class YandexMarketParser extends BaseParser
 
         if (strpos($productUrl, 'redir') !== false || !$productUrl) {
             /* save failed results too */
-            $this->saveProductInfo($product, $productUrl, true);
+            $this->saveProduct($product, $productUrl, true);
 
             return;
         }
@@ -75,7 +75,7 @@ class YandexMarketParser extends BaseParser
 
         $this->parseProductCharacteristicPage($product, $crawlerPage, $urlForRequest);
 
-        $this->saveProductInfo($product, $productUrl);
+        $this->saveProduct($product, $productUrl);
     }
 
     /**

@@ -5,6 +5,7 @@ namespace ProductBundle\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 use ParsingBundle\Entity\ParsingProductInfo;
+use ParsingBundle\Entity\ParsingSite;
 
 /**
  * Product
@@ -12,8 +13,10 @@ use ParsingBundle\Entity\ParsingProductInfo;
  * @ORM\Table(name="product")
  * @ORM\Entity(repositoryClass="ProductBundle\Repository\ProductRepository")
  */
-class Product
+class Product implements IToArray
 {
+    use ToArray;
+
     /**
      * @var int
      *
@@ -47,9 +50,15 @@ class Product
     private $type;
 
     /**
-     * @var string
+     * @var ParsingSite
      *
-     * @ORM\Column(name="price", type="decimal", precision=10, scale=2, nullable=true)
+     * @ORM\ManyToOne(targetEntity="ParsingBundle\Entity\ParsingSite")
+     */
+    private $site;
+
+    /**
+     * @ORM\Embedded(class="ProductBundle\Entity\Price")
+     * @var Price
      */
     private $price;
 
@@ -71,11 +80,17 @@ class Product
     private $productBenchmark;
     
     /**
-     * @ORM\OneToMany(targetEntity="ParsingBundle\Entity\ParsingProductInfo", mappedBy="product")
+     * @ORM\OneToMany(targetEntity="ProductBundle\Entity\Offer", mappedBy="product")
      *
-     * @var ParsingProductInfo[]|ArrayCollection
+     * @var Offer[]|ArrayCollection
      */
     private $offers;
+
+    /**
+     * @ORM\Embedded(class="ParsingBundle\Entity\ParsingProductInfo")
+     * @var ParsingProductInfo
+     */
+    private $productInfo;
 
     /**
      * Product constructor.
@@ -169,27 +184,19 @@ class Product
     }
 
     /**
-     * Set price
-     *
-     * @param string $price
-     *
-     * @return Product
+     * @return Price
      */
-    public function setPrice($price)
+    public function getPrice(): ?Price
     {
-        $this->price = $price;
-
-        return $this;
+        return $this->price;
     }
 
     /**
-     * Get price
-     *
-     * @return string
+     * @param Price $price
      */
-    public function getPrice()
+    public function setPrice(?Price $price)
     {
-        return $this->price;
+        $this->price = $price;
     }
 
     /**
@@ -265,7 +272,7 @@ class Product
     }
     
     /**
-     * @return ParsingProductInfo[]|ArrayCollection
+     * @return Offer[]|ArrayCollection
      */
     public function getOffers()
     {
@@ -273,7 +280,7 @@ class Product
     }
     
     /**
-     * @param ParsingProductInfo[]|ArrayCollection $offers
+     * @param Offer[]|ArrayCollection $offers
      */
     public function setOffers($offers)
     {
@@ -281,16 +288,48 @@ class Product
     }
 
     /**
-     * @param ParsingProductInfo $offer
+     * @param Offer $offer
      *
      * @return Product
      */
-    public function addOffer(ParsingProductInfo $offer)
+    public function addOffer(Offer $offer)
     {
         $this->offers->add($offer);
 
         $offer->setProduct($this);
 
         return $this;
+    }
+
+    /**
+     * @return ParsingSite
+     */
+    public function getSite(): ?ParsingSite
+    {
+        return $this->site;
+    }
+
+    /**
+     * @param ParsingSite $site
+     */
+    public function setSite(?ParsingSite $site)
+    {
+        $this->site = $site;
+    }
+
+    /**
+     * @return ParsingProductInfo
+     */
+    public function getProductInfo(): ?ParsingProductInfo
+    {
+        return $this->productInfo;
+    }
+
+    /**
+     * @param ParsingProductInfo $productInfo
+     */
+    public function setProductInfo(?ParsingProductInfo $productInfo)
+    {
+        $this->productInfo = $productInfo;
     }
 }

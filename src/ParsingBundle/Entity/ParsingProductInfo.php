@@ -2,30 +2,17 @@
 
 namespace ParsingBundle\Entity;
 
-use ApiBundle\RequestObject\CreateAvitoOfferRequest;
 use ApiBundle\RequestObject\ProductInfoRequest;
 use Doctrine\ORM\Mapping as ORM;
-use ProductBundle\Entity\AvitoOffer;
-use ProductBundle\Entity\Product;
+use ProductBundle\Entity\ProductType;
 
 /**
  * ParsingProductInfo
  *
- * @ORM\Table(name="parsing_product_info")
- * @ORM\Entity(repositoryClass="ParsingBundle\Repository\ParsingProductInfoRepository")
- * @ORM\HasLifecycleCallbacks()
+ * @ORM\Embeddable()
  */
 class ParsingProductInfo
 {
-    /**
-     * @var int
-     *
-     * @ORM\Column(name="id", type="integer")
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     */
-    private $id;
-
     /**
      * @ORM\Column(name="id_on_site", type="string", unique=true, nullable=true, options={"default"=null})
      * @var string
@@ -33,25 +20,9 @@ class ParsingProductInfo
     private $idOnSite;
 
     /**
-     * @var Product
-     *
-     * @ORM\ManyToOne(targetEntity="ProductBundle\Entity\Product", inversedBy="offers")
-     * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
-     */
-    private $product;
-
-    /**
-     * @var ParsingSite
-     *
-     * @ORM\ManyToOne(targetEntity="ParsingSite")
-     * @ORM\JoinColumn(name="site_id", referencedColumnName="id")
-     */
-    private $site;
-
-    /**
      * @var string
      *
-     * @ORM\Column(name="url", type="string", length=3000)
+     * @ORM\Column(name="url", type="text")
      */
     private $url;
 
@@ -77,18 +48,6 @@ class ParsingProductInfo
     private $updatedAt;
 
     /**
-     * @ORM\Column(type="datetime")
-     * @var \DateTime
-     */
-    private $offerCreatedAt;
-
-    /**
-     * @ORM\Embedded(class="ProductBundle\Entity\AvitoOffer")
-     * @var AvitoOffer
-     */
-    private $avitoOffer;
-
-    /**
      * ParsingProductInfo constructor.
      *
      * @param ProductInfoRequest $request
@@ -96,65 +55,6 @@ class ParsingProductInfo
     public function __construct(ProductInfoRequest $request)
     {
         $this->updateBaseInfo($request);
-        $this->setCreatedAt(new \DateTime('now'));
-    }
-
-    /**
-     * Get id
-     *
-     * @return int
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
-     * Set product
-     *
-     * @param Product $product
-     *
-     * @return ParsingProductInfo
-     */
-    public function setProduct($product)
-    {
-        $this->product = $product;
-
-        return $this;
-    }
-
-    /**
-     * Get product
-     *
-     * @return Product
-     */
-    public function getProduct()
-    {
-        return $this->product;
-    }
-
-    /**
-     * Set site
-     *
-     * @param ParsingSite $site
-     *
-     * @return ParsingProductInfo
-     */
-    public function setSite($site)
-    {
-        $this->site = $site;
-
-        return $this;
-    }
-
-    /**
-     * Get site
-     *
-     * @return ParsingSite
-     */
-    public function getSite()
-    {
-        return $this->site;
     }
 
     /**
@@ -238,47 +138,12 @@ class ParsingProductInfo
         $this->setUpdatedAt(new \DateTime());
     }
 
-    /**
-     * @param AvitoOffer|null $offer
-     *
-     * @return self
-     */
-    public function setAvitoOffer(AvitoOffer $offer = null)
-    {
-        $this->avitoOffer = $offer;
-
-        return $this;
-    }
-
-    public function createAvitoOffer(CreateAvitoOfferRequest $request)
-    {
-        $offer = new AvitoOffer();
-        $offer->setName($request->name);
-        $offer->setPrice($request->price);
-        $offer->setDescription($request->description);
-        $offer->setPhotos($request->photos);
-        $offer->setUsername($request->username);
-        $offer->setPhone($request->phone);
-
-        $this->setAvitoOffer($offer);
-        $this->isFail = false;
-    }
-
-    /**
-     * @return AvitoOffer|null
-     */
-    public function getAvitoOffer()
-    {
-        return $this->avitoOffer;
-    }
-
     public function updateBaseInfo(ProductInfoRequest $request)
     {
         $this->url = $request->url;
         $this->idOnSite = $request->idOnSite;
         $this->isFail = $request->isFail;
-        $this->site = $request->site;
-        $this->offerCreatedAt = $request->createdAt;
+        $this->createdAt = $request->createdAt;
 
         $this->updateModifiedDatetime();
     }

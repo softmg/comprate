@@ -5,10 +5,7 @@ namespace ApiBundle\RequestObject;
 
 use ApiBundle\Constraints\InstanceOfConstraint;
 use ApiBundle\Constraints\ServiceMethod;
-use ParsingBundle\Entity\ParsingSite;
-use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraint;
-use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Range;
 
@@ -38,11 +35,6 @@ class ProductInfoRequest implements IRequestObject
      * @var string
      */
     public $idOnSite;
-
-    /**
-     * @var ParsingSite
-     */
-    public $site;
 
     /**
      * @var \DateTime
@@ -85,18 +77,6 @@ class ProductInfoRequest implements IRequestObject
                 ]]),
             ],
 
-            'site' => [
-                new NotBlank(['groups' => [
-                    'create',
-                    'Default',
-                ]]),
-
-                new InstanceOfConstraint(['className' => ParsingSite::class, 'groups' => [
-                    'create',
-                    'Default',
-                ]]),
-            ],
-
             'idOnSite' => [
                 new NotBlank(['groups' => [
                     'create',
@@ -108,10 +88,10 @@ class ProductInfoRequest implements IRequestObject
                         'create',
                     ],
 
-                    'service' => 'repo.parsing_product_info',
+                    'service' => 'repo.offer',
                     'method' => 'findByIdOnSite',
                     'reverseCheck' => true,
-                ])
+                ]),
             ],
 
             'createdAt' => [
@@ -122,7 +102,7 @@ class ProductInfoRequest implements IRequestObject
                 new InstanceOfConstraint([
                     'className' => \DateTime::class,
                 ]),
-            ]
+            ],
         ];
     }
 }

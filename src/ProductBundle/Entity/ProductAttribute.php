@@ -11,8 +11,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Table(name="product_attribute")
  * @ORM\Entity(repositoryClass="ProductBundle\Repository\ProductAttributeRepository")
  */
-class ProductAttribute
+class ProductAttribute implements IToArray
 {
+    use ToArray;
+
     /**
      * @var int
      *

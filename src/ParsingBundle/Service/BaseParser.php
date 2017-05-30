@@ -5,22 +5,23 @@
  * Date: 15.02.17
  * Time: 23:49
  */
+
 namespace ParsingBundle\Service;
 
+use ApiBundle\RequestObject\ProductInfoRequest;
+use ApiBundle\RequestObject\RequestObjectValidationException;
 use Doctrine\ORM\EntityManager;
 use Goutte\Client as GoutteClient;
 use GuzzleHttp\Cookie\FileCookieJar;
 use ParsingBundle\Entity\ParsingAttributeInfo;
-use ParsingBundle\Entity\ParsingProductInfo;
 use ParsingBundle\Entity\ParsingSite;
 use ParsingBundle\Entity\ProxyIp;
-use ParsingBundle\Repository\ParsingProductInfoRepository;
 use ParsingBundle\Repository\ParsingSiteRepository;
-use phpDocumentor\Reflection\Types\Boolean;
 use ProductBundle\Entity\Attribute;
 use ProductBundle\Entity\Product;
 use ProductBundle\Entity\ProductAttribute;
 use ProductBundle\Entity\ProductType;
+use ProductBundle\Services\ProductHandler;
 use Symfony\Component\DomCrawler\Crawler;
 use \ForceUTF8\Encoding;
 use Doctrine\ORM\Query\Expr;
@@ -104,12 +105,19 @@ abstract class BaseParser
     private $response;
 
     /**
+     * @var ProductHandler
+     */
+    private $productHandler;
+
+
+    /**
      * @param \Doctrine\ORM\EntityManager $em
      * @param ProxyList $proxyList
      * @param String $cache_dir
      * @param String $rucaptcha_token
      * @param String $proxy_userpasswd
      * @param String $phantomJsScriptPath
+     * @param ProductHandler $productHandler
      */
     public function __construct(
         EntityManager $em,
@@ -117,8 +125,10 @@ abstract class BaseParser
         $cache_dir,
         $rucaptcha_token,
         $proxy_userpasswd,
-        $phantomJsScriptPath
-    ) {
+        $phantomJsScriptPath,
+        ProductHandler $productHandler
+    )
+    {
         $this->em = $em;
         $this->proxyList = $proxyList;
         $this->cache_dir = $cache_dir;
@@ -129,6 +139,7 @@ abstract class BaseParser
         $this->debug = php_sapi_name() == 'cli';
         $this->cookieFilePath = $this->cache_dir . 'cookie.data';
         $this->phantomJsScriptPath = $phantomJsScriptPath;
+        $this->productHandler = $productHandler;
     }
 
     /**
@@ -152,7 +163,10 @@ abstract class BaseParser
      */
     public function getParserSite()
     {
-        return $this->getParsingSiteRepo()->findOneBy(['code' => $this->getParserSiteCode()]);
+        /** @var ParsingSite $site */
+        $site = $this->getParsingSiteRepo()->findOneBy(['code' => $this->getParserSiteCode()]);
+
+        return $site;
     }
 
     /**
@@ -175,15 +189,10 @@ abstract class BaseParser
      */
     public function getParsingSiteRepo()
     {
-        return $this->em->getRepository('ParsingBundle:ParsingSite');
-    }
+        /** @var ParsingSiteRepository $repo */
+        $repo = $this->em->getRepository('ParsingBundle:ParsingSite');
 
-    /**
-     * @return ParsingProductInfoRepository
-     */
-    public function getParsingProductInfoRepo()
-    {
-        return $this->em->getRepository('ParsingBundle:ParsingProductInfo');
+        return $repo;
     }
 
     /**
@@ -295,7 +304,7 @@ abstract class BaseParser
     public function getCrawlerPage($pageUrl, $forceNew = false, $notUseCache = false, $parameters = [], $headers = [])
     {
         $this->fromCache = false;
-        if ($notUseCache || ! $crawler = $this->getCacheCrawler($pageUrl)) {
+        if ($notUseCache || !$crawler = $this->getCacheCrawler($pageUrl)) {
             /* if second request after first success => use old client and sleep before next */
             if (!$forceNew && $client = $this->getCurrentClient()) {
                 if ($client->getResponse()) {
@@ -348,7 +357,7 @@ abstract class BaseParser
 
         $this->crawler = $crawler;
 
-        return  $crawler;
+        return $crawler;
     }
 
     /**
@@ -522,7 +531,7 @@ abstract class BaseParser
     }
 
     /**
-     * @param object|null
+     * @param object|null $response
      * @return Bool
      */
     protected function checkSuccessResponse($response)
@@ -544,35 +553,23 @@ abstract class BaseParser
      * @param String $productUrl
      * @param Boolean $isFail
      */
-    protected function saveProductInfo($product, $productUrl, $isFail = false)
+    protected function saveProduct($product, $productUrl, $isFail = false)
     {
-        $productInfoRepo = $this->em->getRepository('ParsingBundle:ParsingProductInfo');
-        $productInfo = $productInfoRepo->findOneBy(['product' => $product, 'site' => $this->getParserSite()]);
+        $productInfoRequest = new ProductInfoRequest();
+        $productInfoRequest->url = $productUrl;
+        $productInfoRequest->isFail = $isFail;
 
-        if (!$productInfo) {
-            $productInfo = new ParsingProductInfo();
-            $productInfo->setProduct($product);
-            $productInfo->setSite($this->getParserSite());
-        }
+        $product->setSite($this->getParserSite());
 
-        $changed = false;
-        if ($productUrl) {
-            $productUrl = $this->clearUrl($productUrl, false);
-            if ($productInfo->getUrl() !== $productUrl) {
-                $changed = true;
+        try {
+            $this->productHandler->updateProductInfo($product, $productInfoRequest);
+
+            if ($this->em->isOpen()) {
+                $this->em->flush();
+
+                $this->dump(" save product info for id: {$product->getId()}");
             }
-            $productInfo->setUrl($productUrl);
-        }
-        $productInfo->setIsFail($isFail);
-        if ($isFail !== $productInfo->getIsFail()) {
-            $changed = true;
-        }
-
-        if ($changed) {
-            $this->em->persist($productInfo);
-            $this->em->flush();
-
-            $this->dump(" save product info for id: {$product->getId()}");
+        } catch (RequestObjectValidationException $ignored) {
         }
     }
 
@@ -591,8 +588,7 @@ abstract class BaseParser
             ->where('pr_in.updatedAt is NULL OR pr_in.updatedAt < :checkTime')
             ->setParameter(':checkTime', $checkTime)
             ->getQuery()
-            ->execute()
-            ;
+            ->execute();
 
         $this->dump(' get ' . count($products) . ' products for parsing');
 
@@ -696,7 +692,7 @@ abstract class BaseParser
 
         $attribute = $productAttribute->getAttribute();
         if ($attribute->getUnit()) {
-            $search []= $attribute->getUnit();
+            $search [] = $attribute->getUnit();
             if (isset(self::$attributeMeasReplacements[$attribute->getUnit()])) {
                 $search = array_merge($search, self::$attributeMeasReplacements[$attribute->getUnit()]);
             }
@@ -706,7 +702,7 @@ abstract class BaseParser
         if ($value === false) {
             $value = 0;
         }
-        
+
         $this->checkAttributeValueFromExists($attribute, $value);
 
         $productAttribute->setValue($value);

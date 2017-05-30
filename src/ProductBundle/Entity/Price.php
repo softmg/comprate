@@ -1,6 +1,6 @@
 <?php
 
-namespace ParsingBundle\Entity;
+namespace ProductBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 

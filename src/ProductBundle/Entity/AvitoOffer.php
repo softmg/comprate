@@ -2,16 +2,19 @@
 
 namespace ProductBundle\Entity;
 
+use ApiBundle\RequestObject\CreateAvitoOfferRequest;
 use Doctrine\ORM\Mapping as ORM;
-use ParsingBundle\Entity\Price;
+use ProductBundle\Entity\Price;
 
 /**
  * AvitoOffer
  *
  * @ORM\Embeddable
  */
-class AvitoOffer
+class AvitoOffer implements IToArray
 {
+    use ToArray;
+
     /**
      * @var string
      *
@@ -29,7 +32,7 @@ class AvitoOffer
     /**
      * @var string|Price
      *
-     * @ORM\Embedded(class="ParsingBundle\Entity\Price")
+     * @ORM\Embedded(class="ProductBundle\Entity\Price")
      */
     private $price;
     
@@ -54,9 +57,14 @@ class AvitoOffer
      */
     private $phone;
 
-    public function __construct()
+    public function __construct(CreateAvitoOfferRequest $request)
     {
-        $this->photos = [];
+        $this->phone = $request->phone;
+        $this->photos = $request->photos;
+        $this->username = $request->username;
+        $this->name = $request->name;
+        $this->description = $request->description;
+        $this->price = $request->price;
     }
 
     /**

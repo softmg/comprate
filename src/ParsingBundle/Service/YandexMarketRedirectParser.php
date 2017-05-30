@@ -54,7 +54,7 @@ class YandexMarketRedirectParser extends YandexMarketParser
             }
         }
 
-        $this->saveProductInfo($product, $redirectedUrl, true);
+        $this->saveProduct($product, $redirectedUrl, true);
 
         if ($redirectedUrl &&
             $this->isExternalUrl($redirectedUrl)
@@ -88,7 +88,7 @@ class YandexMarketRedirectParser extends YandexMarketParser
 
             /* if get parameters => save product info as success */
             if ($result) {
-                $this->saveProductInfo($product, '', false);
+                $this->saveProduct($product, '', false);
             }
         }
     }

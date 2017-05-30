@@ -140,7 +140,7 @@ class PcpartpickerProductInfoParser extends BaseParser
             $this->em->flush();
 
             if ($result) {
-                $this->saveProductInfo($product, '');
+                $this->saveProduct($product, '');
             }
         } else {
             $this->dump(" Does not get attributes from page $urlForRequest");

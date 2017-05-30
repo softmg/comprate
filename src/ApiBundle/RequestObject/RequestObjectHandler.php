@@ -69,12 +69,12 @@ class RequestObjectHandler
 
     /**
      * @param IRequestObject $requestObject
-     * @param array $groups
      * @param bool $throwable
+     * @param array $groups
      *
      * @return ConstraintViolationListInterface
      */
-    public function validate(IRequestObject $requestObject, $groups = null, $throwable = false)
+    public function validate(IRequestObject $requestObject, $throwable = false, $groups = null)
     {
         $rules = $requestObject->rules();
 

@@ -3,79 +3,58 @@ parameters:
     parsing.phantom_dir: "%kernel.root_dir%/../src/ParsingBundle/Service/phantomjs"
 
 services:
+    parsing:
+        class: ParsingBundle\Service\BaseParser
+        arguments:
+            index_0: "@doctrine.orm.entity_manager"
+            index_1: "@parsing.proxy_list"
+            index_2: "%parsing.cache_dir%"
+            index_3: "%rucaptcha_token%"
+            index_4: "%proxy_userpasswd%"
+            index_5: ''
+            index_6: '@product_handler'
+
+        abstract: true
+
     parsing.proxy_list:
         class: ParsingBundle\Service\ProxyList
         arguments: ["@doctrine.orm.entity_manager"]
 
     parsing.yandex_market:
         class: ParsingBundle\Service\YandexMarketParser
+        parent: parsing
         arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@parsing.proxy_list"
-            - "%parsing.cache_dir%"
-            - "%rucaptcha_token%"
-            - "%proxy_userpasswd%"
-            - "%parsing.phantom_dir%/yandex_market.js"
+            index_5: "%parsing.phantom_dir%/yandex_market.js"
 
     parsing.yandex_market_redirect:
         class: ParsingBundle\Service\YandexMarketRedirectParser
+        parent: parsing
         arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@parsing.proxy_list"
-            - "%parsing.cache_dir%"
-            - "%rucaptcha_token%"
-            - "%proxy_userpasswd%"
-            - "%parsing.phantom_dir%/yandex_market.js"
+            index_5: "%parsing.phantom_dir%/yandex_market.js"
 
     parsing.yandex_market_check_again:
         class: ParsingBundle\Service\YandexMarketCheckAgainParser
+        parent: parsing
         arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@parsing.proxy_list"
-            - "%parsing.cache_dir%"
-            - "%rucaptcha_token%"
-            - "%proxy_userpasswd%"
-            - "%parsing.phantom_dir%/yandex_market.js"
+            index_5: "%parsing.phantom_dir%/yandex_market.js"
 
     parsing.pcpartpicker:
         class: ParsingBundle\Service\PcpartpickerParser
-        arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@parsing.proxy_list"
-            - "%parsing.cache_dir%"
-            - "%rucaptcha_token%"
-            - ""
-            - ""
+        parent: parsing
 
     parsing.pcpartpicker_product_info:
         class: ParsingBundle\Service\PcpartpickerProductInfoParser
+        parent: parsing
         arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@parsing.proxy_list"
-            - "%parsing.cache_dir%"
-            - "%rucaptcha_token%"
-            - "%proxy_userpasswd%"
-            - "%parsing.phantom_dir%/yandex_market.js"
+            index_5: "%parsing.phantom_dir%/yandex_market.js"
 
     parsing.benchmark:
         class: ParsingBundle\Service\BenchmarkParser
-        arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@parsing.proxy_list"
-            - "%parsing.cache_dir%"
-            - "%rucaptcha_token%"
-            - ""
-            - ""
+        parent: parsing
 
     parsing.benchmark_search:
         class: ParsingBundle\Service\BenchmarkSearchParser
-        arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@parsing.proxy_list"
-            - "%parsing.cache_dir%"
-            - "%rucaptcha_token%"
-            - ""
-            - ""
+        parent: parsing
 
     parsing.all_free_proxy:
         class: ParsingBundle\Service\AllFreeProxyParser
@@ -83,7 +62,7 @@ services:
 
     parsing.spys:
         class: ParsingBundle\Service\SpysFreeProxyParser
-        arguments: ["@doctrine.orm.entity_manager", "@parsing.proxy_list", "%parsing.cache_dir%", "%rucaptcha_token%"]
+        parent: parsing
 
     parsing.phantom.client:
         class: ParsingBundle\Service\PhantomJSClient
@@ -98,16 +77,13 @@ services:
             - "%rucaptcha_token%"
             - "%proxy_userpasswd%"
             - ""
-            - "@repo.parsing_product_info"
+            - '@product_handler'
+            - '@repo.offer'
             - "@request_object_handler"
             - "@repo.parsing_site"
             - "@avito_date_parser"
-
-    repo.parsing_product_info:
-        class: Doctrine\ORM\EntityRepository
-        factory: ['@doctrine.orm.default_entity_manager', getRepository]
-        arguments:
-            - ParsingBundle\Entity\ParsingProductInfo
+            - '@repo.product_type'
+            - '@offer_handler'
 
     repo.parsing_site:
         class: Doctrine\ORM\EntityRepository

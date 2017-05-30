@@ -10,6 +10,8 @@ class InstanceOfConstraint extends Constraint
 {
     public $className;
 
+    public $isCollection = false;
+
     public $message = 'The value "{{ value }}" is not instance of "{{ className }}".';
 
     public function getTargets()

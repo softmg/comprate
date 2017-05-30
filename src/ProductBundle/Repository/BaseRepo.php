@@ -1,6 +1,6 @@
 <?php
 
-namespace ParsingBundle\Repository;
+namespace ProductBundle\Repository;
 
 use Doctrine\ORM\EntityRepository;
 use ParsingBundle\Exception\NotFoundException;
