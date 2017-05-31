@@ -38,6 +38,7 @@ class ProductHandler
 
         if (!$productInfo) {
             $productInfo = new ParsingProductInfo($request);
+            $product->setProductInfo($productInfo);
         }
 
         $productInfo->updateBaseInfo($request);

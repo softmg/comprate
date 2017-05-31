@@ -19,15 +19,16 @@ class YandexMarketRedirectParser extends YandexMarketParser
      */
     public function run()
     {
-        $productsInfo = $this->getProductsForFirstParsing();
+        $products = $this->getProductsForFirstParsing();
 
         /** disable proxy for redirects */
         $this->setNotUseProxy(true);
         $this->setNotTryAgainAfterFail(true);
 
-        /** @var ParsingProductInfo $productInfo */
-        foreach ($productsInfo as $productInfo) {
-            $this->getProductAttributesFromRedirect($productInfo->getProduct(), $productInfo->getUrl());
+        foreach ($products as $product) {
+            $url = $product->getSite()->getUrl() . $product->getProductInfo()->getUrl();
+
+            $this->getProductAttributesFromRedirect($product, $url);
         }
     }
 
@@ -95,6 +96,8 @@ class YandexMarketRedirectParser extends YandexMarketParser
 
     /**
      * Get products notparsing yet on new site
+     *
+     * @return Product[]
      */
     protected function getProductsForFirstParsing()
     {

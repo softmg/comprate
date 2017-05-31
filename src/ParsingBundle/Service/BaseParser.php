@@ -581,7 +581,7 @@ abstract class BaseParser
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('p')
             ->from('ProductBundle:Product', 'p')
-            ->leftJoin('ProductBundle:Offer', 'pr_in', Expr\Join::WITH, 'pr_in.product=p')
+            ->leftJoin('ProductBundle:Product', 'pr_in', Expr\Join::WITH, 'pr_in.product=p')
             ->where('pr_in.productInfo.updatedAt is NULL OR pr_in.productInfo.updatedAt < :checkTime')
             ->setParameter(':checkTime', $checkTime)
             ->getQuery()

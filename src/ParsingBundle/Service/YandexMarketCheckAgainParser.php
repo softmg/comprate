@@ -19,11 +19,10 @@ class YandexMarketCheckAgainParser extends YandexMarketParser
      */
     public function run()
     {
-        $productsInfo = $this->getProductsForFirstParsing();
+        $products = $this->getProductsForFirstParsing();
 
-        /** @var ParsingProductInfo $productInfo */
-        foreach ($productsInfo as $productInfo) {
-            $this->getProductAttributes($productInfo->getProduct());
+        foreach ($products as $product) {
+            $this->getProductAttributes($product);
         }
     }
     
@@ -56,12 +55,14 @@ class YandexMarketCheckAgainParser extends YandexMarketParser
     
     /**
      * Get products notparsing yet on new site
+     *
+     * @return Product[]
      */
     protected function getProductsForFirstParsing()
     {
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('pr_in')
-            ->from('ProductBundle:Offer', 'pr_in')
+            ->from('ProductBundle:Product', 'pr_in')
             ->where('pr_in.productInfo.isFail = :isFail')
             ->andWhere('pr_in.site = :site')
             ->setParameter(':isFail', true)

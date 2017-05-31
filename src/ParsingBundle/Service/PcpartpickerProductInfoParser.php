@@ -29,11 +29,12 @@ class PcpartpickerProductInfoParser extends BaseParser
 
     public function run()
     {
-        $productsInfo = $this->getProductsForFirstParsing();
+        $products = $this->getProductsForFirstParsing();
 
-        /** @var ParsingProductInfo $productInfo */
-        foreach ($productsInfo as $productInfo) {
-            $this->getProductAttributes($productInfo->getProduct(), $productInfo->getUrl());
+        foreach ($products as $product) {
+            $url = $product->getSite()->getUrl() . $product->getProductInfo()->getUrl();
+
+            $this->getProductAttributes($product, $url);
         }
     }
 
@@ -193,13 +194,13 @@ class PcpartpickerProductInfoParser extends BaseParser
     }
 
     /**
-     * @return Offer[]
+     * @return Product[]
      */
     protected function getProductsForFirstParsing()
     {
         $qb = $this->em->createQueryBuilder();
         $products = $qb->select('pr_in')
-            ->from('ProductBundle:Offer', 'pr_in')
+            ->from('ProductBundle:Product', 'pr_in')
             //->leftJoin('ProductBundle:Product', 'p', Expr\Join::WITH, 'pr_in.product=p')
             ->where('pr_in.productInfo.isFail = :isFail')
             ->andWhere('pr_in.site = :site')
